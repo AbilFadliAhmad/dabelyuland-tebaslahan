@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/* State Default: Transparan (Saat di atas) */
+header-transparent {
+    background-color: transparent;
+}
+.header-transparent .header-title { color: #ffffff !important; } /* Teks jadi putih di atas hero gelap */
+.header-transparent .nav-link { color: rgba(255,255,255,0.8) !important; }
+.header-transparent .navbar { padding-top: 20px !important; padding-bottom: 20px !important; }
+
+/* State Scrolled: Solid (Saat di-scroll) */
+.header-scrolled {
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+.header-scrolled .header-title { color: #1e293b !important; } /* Kembali ke Slate-800 */
+.header-scrolled .nav-link { color: #64748b !important; }
+.header-scrolled .navbar { padding-top: 10px !important; padding-bottom: 10px !important; }
+
+/* Transisi Halus */
+.transition-all { transition: all 0.4s ease-in-out; }
+
+/* resources/css/app.css */
+
+.animate__fadeInDown {
+    animation: fadeInDown 0.5s;
+}
+
+.animate__fadeOutUp {
+    animation: fadeOutUp 0.5s;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -100%, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: translate3d(0, -100%, 0);
+    }
+}
+
+/* Memperbaiki tampilan agar benar-benar di tengah atas dan responsif */
+.swal2-container.swal2-top {
+    top: 10px !important;
+}
