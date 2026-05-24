@@ -8,12 +8,24 @@ use App\Models\Property;
 use App\Models\Testimoni;
 use App\Models\PropertyRecommendation;
 use App\Models\PropertyHighlight;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Artisan;
 // use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
     public function index(Request $request)
     {
+
+        if (!Schema::hasTable('users')) {
+            try {
+                // Paksa jalankan migrasi saat halaman web diakses pertama kali
+                Artisan::call('migrate', ['--force' => true]);
+            } catch (\Exception $e) {
+                // Jika gagal (misal kredensial database di Render salah), munculkan erornya
+                return "Gagal migrasi otomatis di server: " . $e->getMessage();
+            }
+        }
         // 1. Definisikan Query Dasar Rekomendasi (Gunakan property_id untuk kestabilan cursor)
         $queryRekomendasi = PropertyRecommendation::with(['property', 'property.mainImage'])
             ->whereHas('property', function($q) {
