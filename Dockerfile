@@ -17,10 +17,10 @@ RUN mkdir -p storage/logs bootstrap/cache && \
 USER www-data
 
 # 5. Jalankan optimasi sistem Laravel internal secara otomatis saat production
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=php && \
-    php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
+RUN rm -rf bootstrap/cache/*.php && \
+    composer install --no-dev --optimize-autoloader --ignore-platform-req=php && \
+    php artisan config:clear && \
+    php artisan cache:clear
 
 # 6. Buka port jaringan default Render
 EXPOSE 8080
