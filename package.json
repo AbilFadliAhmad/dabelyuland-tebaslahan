@@ -19,6 +19,6 @@
         "sweetalert2": "^11.26.24"
     },
     "engines": {
-        "node": "20.x"
+        "node": "20.12"
     }
 }
