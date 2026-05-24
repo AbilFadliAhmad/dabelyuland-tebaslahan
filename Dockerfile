@@ -20,7 +20,8 @@ USER www-data
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=php && \
     php artisan config:cache && \
     php artisan route:cache && \
-    php artisan view:cache
+    php artisan view:cache && \
+    php artisan migrate --force
 
 # 6. Buka port jaringan default Render
 EXPOSE 8080
