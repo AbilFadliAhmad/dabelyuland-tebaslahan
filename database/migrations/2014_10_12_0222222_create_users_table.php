@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('role', ['admin', 'user'])->default('user'); // Role pengguna
             $table->string('nowa');     // Nomor WhatsApp
             $table->boolean('is_verified')->default(false); // Verifikasi admin
-            $table->integer('total_properties')->default(0);
+            $table->integer('total_properties')->default(0);    
             $table->rememberToken();
             $table->timestamps();
         });

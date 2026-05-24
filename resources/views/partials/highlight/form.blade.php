@@ -13,7 +13,6 @@
             background-color: #fffbeb;
             color: #b45309;
             border-color: #fbbf24;
-            /* amber-400 */
             box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.15);
         }
 
@@ -21,7 +20,6 @@
             background-color: #eff6ff;
             color: #1d4ed8;
             border-color: #60a5fa;
-            /* blue-400 */
             box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.15);
         }
 
@@ -40,9 +38,7 @@
         /* Segmented Control Refined (Durasi) */
         .duration-toggle input:checked+.duration-card {
             background-color: #f0fdfa;
-            /* teal-50 */
             border-color: #0d9488;
-            /* teal-600 */
             box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.1);
         }
 
@@ -67,7 +63,6 @@
             background-color: #f8fafc;
         }
 
-        /* Custom Scrollbar untuk Modal */
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
@@ -77,7 +72,6 @@
             border-radius: 10px;
         }
 
-        /* Kustomisasi SweetAlert agar senada */
         .swal2-popup {
             border-radius: 1.5rem !important;
             font-family: 'Inter', sans-serif;
@@ -88,18 +82,28 @@
 @section('content')
     @php
         $user = Auth::user();
-        $routeAction = $user->role == 'admin' ? route('admin.highlight.store') : route('user.highlight.store');
+        $routeAction = $user->role == 'admin' ? route('account.highlight.store') : route('user.highlight.store');
+
+        // Memisahkan layanan berdasarkan tipe
+        $rekomendasiServices = isset($service) ? $service->where('jenis_layanan', 'rekomendasi') : collect();
+        $highlightServices = isset($service) ? $service->where('jenis_layanan', 'highlight') : collect();
+
+        // Mengambil sisa kuota/token dan koin
+        $rekQuota = $wallet->recommendation_quota ?? 0;
+        $highQuota = $wallet->highlight_quota ?? 0;
+        $saldoKoin = $wallet->dabelyu_koin ?? 0;
+
+        // Cek input lama jika terjadi validasi error
+        $oldType = old('type', $highlight->type ?? 'rekomendasi');
     @endphp
 
     <div class="w-full min-h-screen p-4 sm:p-6 lg:p-8 font-['Inter'] bg-gray-50/50">
 
         <div class="form-container-focused">
 
-            {{-- ==========================================================
-                 1. HEADER AREA
-                 ========================================================== --}}
+            {{-- 1. HEADER AREA --}}
             <div class="flex items-center gap-4 mb-8">
-                <a href="{{ route('admin.highlight.index') }}"
+                <a href="{{ route('account.highlight.index') }}"
                     class="w-12 h-12 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#0d9488] transition-all shadow-sm hover:shadow-md">
                     <i class="fas fa-chevron-left"></i>
                 </a>
@@ -116,9 +120,7 @@
             <form action="{{ $routeAction }}" method="POST" id="highlightForm" class="space-y-6">
                 @csrf
 
-                {{-- ==========================================================
-                     2. PENGATURAN PROMOSI (TIPE & DURASI)
-                     ========================================================== --}}
+                {{-- 2. PENGATURAN PROMOSI (TIPE & DURASI) --}}
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {{-- KIRI: TIPE PENAYANGAN --}}
@@ -132,8 +134,8 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <label class="type-toggle cursor-pointer group h-full">
-                                <input type="radio" name="type" value="rekomendasi" class="hidden"
-                                    {{ old('type', $highlight->type ?? 'rekomendasi') == 'rekomendasi' ? 'checked' : '' }}>
+                                <input type="radio" name="type" value="rekomendasi" class="hidden type-radio"
+                                    {{ $oldType == 'rekomendasi' ? 'checked' : '' }}>
                                 <div
                                     class="toggle-card p-5 rounded-[1.5rem] flex flex-col items-center text-center gap-3 h-full justify-center">
                                     <div
@@ -150,8 +152,8 @@
                             </label>
 
                             <label class="type-toggle cursor-pointer group h-full">
-                                <input type="radio" name="type" value="highlight" class="hidden"
-                                    {{ old('type', $highlight->type ?? '') == 'highlight' ? 'checked' : '' }}>
+                                <input type="radio" name="type" value="highlight" class="hidden type-radio"
+                                    {{ $oldType == 'highlight' ? 'checked' : '' }}>
                                 <div
                                     class="toggle-card p-5 rounded-[1.5rem] flex flex-col items-center text-center gap-3 h-full justify-center">
                                     <div
@@ -169,7 +171,7 @@
                         </div>
                     </div>
 
-                    {{-- KANAN: DURASI --}}
+                    {{-- KANAN: DURASI (DINAMIS DARI DATABASE) --}}
                     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
                         <div class="flex items-center gap-3 mb-6">
                             <div class="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-[#0d9488]">
@@ -178,77 +180,127 @@
                             <h4 class="font-['Plus_Jakarta_Sans'] text-lg font-bold text-gray-900 m-0">Durasi Promosi</h4>
                         </div>
 
-                        <div class="flex flex-col gap-3">
-                            {{-- Pilihan 1 Minggu --}}
-                            <label class="duration-toggle cursor-pointer">
-                                <input type="radio" name="duration" value="1_minggu" class="hidden" checked>
-                                <div class="duration-card p-4 rounded-2xl flex items-center justify-between bg-white">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-dur text-gray-400 transition-colors">
-                                            <i class="fas fa-calendar-day"></i>
-                                        </div>
-                                        <div>
-                                            <span
-                                                class="block font-bold text-gray-700 label-dur transition-colors text-sm">1
-                                                Minggu</span>
-                                            <span class="text-[11px] text-gray-400">Masa tayang 7 Hari</span>
-                                        </div>
-                                    </div>
-                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 radio-circle transition-all">
-                                    </div>
-                                </div>
-                            </label>
+                        <div class="flex flex-col gap-3" id="durationContainer">
 
-                            {{-- Pilihan 2 Minggu --}}
-                            <label class="duration-toggle cursor-pointer">
-                                <input type="radio" name="duration" value="2_minggu" class="hidden">
-                                <div class="duration-card p-4 rounded-2xl flex items-center justify-between bg-white">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-dur text-gray-400 transition-colors">
-                                            <i class="fas fa-calendar-week"></i>
+                            {{-- ========================================================= --}}
+                            {{-- DAFTAR DURASI REKOMENDASI --}}
+                            {{-- ========================================================= --}}
+                            @forelse($rekomendasiServices as $index => $item)
+                                <label
+                                    class="duration-toggle cursor-pointer duration-opt opt-rekomendasi {{ $oldType == 'rekomendasi' ? '' : 'hidden' }}">
+                                    <input type="radio" name="service_id" value="{{ $item->id }}" class="hidden"
+                                        {{ $oldType == 'rekomendasi' && $index == 0 ? 'checked' : '' }}>
+                                    <div class="duration-card p-4 rounded-2xl flex items-center justify-between bg-white">
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-dur text-gray-400 transition-colors">
+                                                <i
+                                                    class="fas {{ $item->jumlah_hari <= 7 ? 'fa-calendar-day' : ($item->jumlah_hari <= 14 ? 'fa-calendar-week' : 'fa-calendar-alt') }}"></i>
+                                            </div>
+                                            <div>
+                                                <span
+                                                    class="block font-bold text-gray-700 label-dur transition-colors text-sm">{{ $item->nama_durasi }}</span>
+                                                <span class="text-[11px] text-gray-400">Masa tayang {{ $item->jumlah_hari }}
+                                                    Hari</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span
-                                                class="block font-bold text-gray-700 label-dur transition-colors text-sm">2
-                                                Minggu</span>
-                                            <span class="text-[11px] text-gray-400">Masa tayang 14 Hari</span>
+                                        <div class="flex items-center gap-3">
+                                            @if ($rekQuota > 0)
+                                                <span
+                                                    class="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+                                                    1 Token</span>
+                                            @else
+                                                <span
+                                                    class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">{{ number_format($item->biaya_koin, 0, ',', '.') }}
+                                                    Koin</span>
+                                            @endif
+                                            <div
+                                                class="w-5 h-5 rounded-full border-2 border-gray-300 radio-circle transition-all">
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 radio-circle transition-all">
-                                    </div>
+                                </label>
+                            @empty
+                                <div
+                                    class="p-4 text-center text-sm text-gray-400 border border-dashed rounded-2xl duration-opt opt-rekomendasi {{ $oldType == 'rekomendasi' ? '' : 'hidden' }}">
+                                    Paket rekomendasi belum tersedia.
                                 </div>
-                            </label>
+                            @endforelse
 
-                            {{-- Pilihan 1 Bulan --}}
-                            <label class="duration-toggle cursor-pointer">
-                                <input type="radio" name="duration" value="1_bulan" class="hidden">
-                                <div class="duration-card p-4 rounded-2xl flex items-center justify-between bg-white">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-dur text-gray-400 transition-colors">
-                                            <i class="fas fa-calendar-alt"></i>
+                            {{-- ========================================================= --}}
+                            {{-- DAFTAR DURASI HIGHLIGHT --}}
+                            {{-- ========================================================= --}}
+                            @forelse($highlightServices as $index => $item)
+                                <label
+                                    class="duration-toggle cursor-pointer duration-opt opt-highlight {{ $oldType == 'highlight' ? '' : 'hidden' }}">
+                                    <input type="radio" name="service_id" value="{{ $item->id }}" class="hidden"
+                                        {{ $oldType == 'highlight' && $index == 0 ? 'checked' : '' }}>
+                                    <div class="duration-card p-4 rounded-2xl flex items-center justify-between bg-white">
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center icon-dur text-gray-400 transition-colors">
+                                                <i
+                                                    class="fas {{ $item->jumlah_hari <= 7 ? 'fa-calendar-day' : ($item->jumlah_hari <= 14 ? 'fa-calendar-week' : 'fa-calendar-alt') }}"></i>
+                                            </div>
+                                            <div>
+                                                <span
+                                                    class="block font-bold text-gray-700 label-dur transition-colors text-sm">{{ $item->nama_durasi }}</span>
+                                                <span class="text-[11px] text-gray-400">Masa tayang
+                                                    {{ $item->jumlah_hari }} Hari</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span
-                                                class="block font-bold text-gray-700 label-dur transition-colors text-sm">1
-                                                Bulan</span>
-                                            <span class="text-[11px] text-gray-400">Masa tayang 30 Hari</span>
+                                        <div class="flex items-center gap-3">
+                                            @if ($highQuota > 0)
+                                                <span
+                                                    class="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+                                                    1 Token</span>
+                                            @else
+                                                <span
+                                                    class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">{{ number_format($item->biaya_koin, 0, ',', '.') }}
+                                                    Koin</span>
+                                            @endif
+                                            <div
+                                                class="w-5 h-5 rounded-full border-2 border-gray-300 radio-circle transition-all">
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 radio-circle transition-all">
-                                    </div>
+                                </label>
+                            @empty
+                                <div
+                                    class="p-4 text-center text-sm text-gray-400 border border-dashed rounded-2xl duration-opt opt-highlight {{ $oldType == 'highlight' ? '' : 'hidden' }}">
+                                    Paket highlight belum tersedia.
                                 </div>
-                            </label>
+                            @endforelse
                         </div>
-                    </div>
 
+                        {{-- INFO SALDO/TOKEN DOMPET PENGGUNA --}}
+                        <div class="mt-5 pt-4 border-t border-gray-100">
+                            <div class="flex flex-col gap-2">
+                                <p
+                                    class="text-[11px] text-gray-500 m-0 flex items-center gap-1.5 duration-opt opt-rekomendasi {{ $oldType == 'rekomendasi' ? '' : 'hidden' }}">
+                                    <i
+                                        class="fas fa-ticket-alt {{ $rekQuota > 0 ? 'text-teal-500' : 'text-gray-400' }}"></i>
+                                    Sisa Token Rekomendasi: <span
+                                        class="font-bold {{ $rekQuota > 0 ? 'text-teal-600' : 'text-gray-700' }}">{{ $rekQuota }}</span>
+                                </p>
+                                <p
+                                    class="text-[11px] text-gray-500 m-0 flex items-center gap-1.5 duration-opt opt-highlight {{ $oldType == 'highlight' ? '' : 'hidden' }}">
+                                    <i
+                                        class="fas fa-ticket-alt {{ $highQuota > 0 ? 'text-teal-500' : 'text-gray-400' }}"></i>
+                                    Sisa Token Highlight: <span
+                                        class="font-bold {{ $highQuota > 0 ? 'text-teal-600' : 'text-gray-700' }}">{{ $highQuota }}</span>
+                                </p>
+                                <p class="text-[11px] text-gray-500 m-0 flex items-center gap-1.5">
+                                    <i class="fas fa-coins text-amber-500"></i> Saldo Koin Anda: <span
+                                        class="font-bold text-amber-600">{{ number_format($saldoKoin, 0, ',', '.') }}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
-                {{-- ==========================================================
-                     3. TARGET PROPERTI (AGENT & UNIT)
-                     ========================================================== --}}
+                {{-- 3. TARGET PROPERTI (AGENT & UNIT) --}}
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-[#0d9488]">
@@ -268,7 +320,6 @@
                                 </label>
                                 <input type="hidden" name="user_id" id="selected_agent_id" required>
 
-                                {{-- Placeholder --}}
                                 <div id="agent_placeholder" onclick="openModal('modalAgent')"
                                     class="flex-1 border-2 border-dashed border-gray-300 bg-gray-50 rounded-[1.5rem] p-6 flex flex-col items-center justify-center cursor-pointer hover:border-[#0d9488] hover:bg-teal-50/50 transition-all min-h-[160px] group text-center">
                                     <div
@@ -279,15 +330,12 @@
                                         Pilih Agen</p>
                                 </div>
 
-                                {{-- Preview --}}
                                 <div id="agent_preview"
                                     class="hidden flex-1 bg-teal-50/30 rounded-[1.5rem] p-6 border-2 border-[#0d9488]/20 flex flex-col items-center text-center justify-center min-h-[160px] relative">
-
                                     <button type="button" onclick="openModal('modalAgent')"
                                         class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white shadow-sm text-gray-400 hover:text-[#0d9488] flex items-center justify-center transition-all">
                                         <i class="fas fa-pencil-alt text-xs"></i>
                                     </button>
-
                                     <div id="preview_agent_initials"
                                         class="w-16 h-16 rounded-full flex items-center justify-center shadow-md mb-3 bg-[#0d9488] text-white font-extrabold text-xl uppercase tracking-widest">
                                     </div>
@@ -307,7 +355,6 @@
                             </label>
                             <input type="hidden" name="property_id" id="selected_property_id" required>
 
-                            {{-- Placeholder --}}
                             <div id="property_placeholder" onclick="openModal('modalProperty')"
                                 class="flex-1 border-2 border-dashed border-gray-300 bg-gray-50 rounded-[1.5rem] p-6 flex flex-col items-center justify-center cursor-pointer hover:border-[#0d9488] hover:bg-teal-50/50 transition-all min-h-[160px] group text-center">
                                 <div
@@ -318,15 +365,12 @@
                                     Properti</p>
                             </div>
 
-                            {{-- Preview --}}
                             <div id="property_preview"
                                 class="hidden flex-1 bg-teal-50/30 rounded-[1.5rem] p-4 border-2 border-[#0d9488]/20 flex flex-col min-h-[160px] relative">
-
                                 <button type="button" onclick="openModal('modalProperty')"
                                     class="absolute top-6 right-6 z-10 w-8 h-8 rounded-full bg-white shadow-md text-gray-400 hover:text-[#0d9488] flex items-center justify-center transition-all">
                                     <i class="fas fa-pencil-alt text-xs"></i>
                                 </button>
-
                                 <div
                                     class="relative w-full h-32 rounded-xl overflow-hidden mb-3 shadow-sm border border-gray-200">
                                     <img id="preview_prop_img" src="" class="w-full h-full object-cover">
@@ -342,9 +386,7 @@
                     </div>
                 </div>
 
-                {{-- ==========================================================
-                     4. ACTION BAR 
-                     ========================================================== --}}
+                {{-- 4. ACTION BAR --}}
                 <div
                     class="flex flex-col sm:flex-row items-center justify-between bg-gray-900 rounded-3xl p-4 sm:p-5 shadow-xl gap-4">
                     <div class="flex items-center gap-3 px-2">
@@ -356,7 +398,7 @@
                         </p>
                     </div>
                     <div class="flex gap-3 w-full sm:w-auto">
-                        <a href="{{ route('admin.highlight.index') }}"
+                        <a href="{{ route('account.highlight.index') }}"
                             class="flex-1 sm:flex-none px-6 py-3.5 text-center text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-2xl font-bold text-sm transition-colors no-underline">
                             Batal
                         </a>
@@ -370,13 +412,10 @@
             </form>
         </div>
 
-        {{-- ==========================================================
-             MODALS (Tidak Diubah Struktur Logikanya)
-             ========================================================== --}}
-
+        {{-- MODALS --}}
         {{-- MODAL AGENT --}}
         <div id="modalAgent" onclick="closeModal('modalAgent')"
-            class="fixed inset-0 z-[999] hidden items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 transition-all">
+            class="fixed inset-0 z-[999] hidden items-center justify-center bg-gray-900/60 p-4 transition-all">
             <div onclick="event.stopPropagation()"
                 class="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -414,7 +453,7 @@
 
         {{-- MODAL PROPERTI --}}
         <div id="modalProperty" onclick="closeModal('modalProperty')"
-            class="fixed inset-0 z-[999] hidden items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 transition-all">
+            class="fixed inset-0 z-[999] hidden items-center justify-center bg-gray-900/60 p-4 transition-all">
             <div onclick="event.stopPropagation()"
                 class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
                 <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -455,8 +494,37 @@
 @endsection
 
 @section('script')
-    {{-- JS SAMA SEPERTI SEBELUMNYA, TIDAK DIUBAH --}}
     <script>
+        // Logika Toggle Dinamis Tipe & Durasi
+        document.addEventListener('DOMContentLoaded', function() {
+            const typeRadios = document.querySelectorAll('.type-radio');
+
+            typeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const selectedType = this.value;
+
+                    // Sembunyikan semua opsi dan uncheck radio button didalamnya
+                    document.querySelectorAll('.duration-opt').forEach(el => {
+                        el.classList.add('hidden');
+                        const input = el.querySelector('input[type="radio"]');
+                        if (input) input.checked = false;
+                    });
+
+                    // Tampilkan hanya opsi yang sesuai dengan tipe yang dipilih
+                    const targetOpts = document.querySelectorAll('.opt-' + selectedType);
+                    targetOpts.forEach((el, index) => {
+                        el.classList.remove('hidden');
+                        // Centang otomatis elemen pertama
+                        if (index === 0) {
+                            const firstInput = el.querySelector('input[type="radio"]');
+                            if (firstInput) firstInput.checked = true;
+                        }
+                    });
+                });
+            });
+        });
+
+        // Search Handlers
         let searchTimer;
 
         function openModal(id) {
@@ -518,7 +586,7 @@
 
                     const url = type === 'agent' ?
                         `{{ route('admin.highlight.search.agents') }}?q=${query}` :
-                        `{{ route('user.highlight.search.properties') }}?q=${query}&user_id=${agentId}`;
+                        `{{ route('account.highlight.search.properties') }}?q=${query}&user_id=${agentId}`;
 
                     const response = await fetch(url);
                     const data = await response.json();

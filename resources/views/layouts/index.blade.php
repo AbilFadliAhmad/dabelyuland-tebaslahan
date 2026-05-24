@@ -73,23 +73,54 @@
         @yield('styles')
 
 
-        {{-- Google analytics --}}
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-8WSPTNP1VJ"></script>
+        {{-- Tracking pengunjung unik untuk keperluan analisa --}}
         <script>
-            window.dataLayer = window.dataLayer || [];
+            document.addEventListener('DOMContentLoaded', function() {
+                const visitorCookieName = 'daily_visitor_tracked';
 
-            function gtag() {
-                dataLayer.push(arguments);
-            }
-            gtag('js', new Date());
+                if (document.cookie.indexOf(visitorCookieName + '=') === -1) {
+                    const maxAgeSeconds = getSecondsUntilMidnightWIB();
+                    document.cookie = visitorCookieName + "=true; max-age=" + maxAgeSeconds + "; path=/";
 
-            gtag('config', 'G-8WSPTNP1VJ', {
-                'debug_mode': true,
-                'cookie_prefix': 'tebaslahan_local',
+                    const url = '{{ route('track-view-website') }}';
+
+                    // Menggunakan FormData
+                    let formData = new FormData();
+                    formData.append('_token', '{{ csrf_token() }}'); // CSRF token langsung dari Blade
+
+                    navigator.sendBeacon(url, formData);
+                }
             });
-        </script>
 
+            const trackWhatsAppClick = ($id) => {
+                const cookieName = 'property_wa_clicked_' + $id;
+
+                // 1. Cek apakah user sudah pernah klik tombol WA properti ini hari ini
+                if (document.cookie.indexOf(cookieName + '=') === -1) {
+
+                    // A. Set Cookie yang akan hangus otomatis jam 12 malam WIB
+                    const maxAgeSeconds = getSecondsUntilMidnightWIB(); // Menggunakan fungsi hitung mundur Anda
+                    document.cookie = cookieName + "=true; max-age=" + maxAgeSeconds + "; path=/";
+
+                    // B. Siapkan URL dan Token CSRF Laravel
+                    const url = "{{ route('track-click-whatsapp') }}";
+                    const token = '{{ csrf_token() }}';
+
+                    // C. Ambil parameter dari URL untuk melacak sumber (opsional, jika dibutuhkan)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const sourceParam = urlParams.get('source') || 'other';
+
+                    // D. Bungkus data ke dalam FormData (Wajib karena sendBeacon mengirim via POST body)
+                    const formData = new FormData();
+                    formData.append('property_id', $id);
+                    formData.append('source', sourceParam);
+                    formData.append('_token', token); // Laravel otomatis membaca token dari body form ini
+
+                    // E. Tembak data ke backend di latar belakang secara aman
+                    navigator.sendBeacon(url, formData);
+                }
+            }
+        </script>
     </head>
 
 

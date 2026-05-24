@@ -9,16 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             
             // order_id dari Midtrans (Contoh: TBL-XXXX-123456)
-            $table->string('order_id')->unique(); 
+            $table->string('order_id')->primary(); 
+
+            // jumlah uang
+            $table->decimal('price', 12, 2)->default(0.00);
             
             $table->enum('tipe', ['membership', 'koin']);
             
             // Status resmi standar Midtrans
             $table->enum('status', [
+                'request',
                 'pending', 
                 'settlement', // Berhasil
                 'expire',     // Kedaluwarsa/Waktu Habis
@@ -28,6 +31,9 @@ return new class extends Migration
                 'failure'
             ])->default('pending');
 
+            // Menyimpan info pemnyaran seperti actions
+            $table->text('payment_info')->nullable();
+
             $table->timestamps();
 
             // ==========================================
@@ -35,10 +41,10 @@ return new class extends Migration
             // ==========================================
             
             // 1. Index Komposit untuk Cek Transaksi Pending (Sangat Cepat)
-            $table->index(['user_id', 'tipe', 'status']);
+            $table->index(['status', 'tipe', 'user_id']);
             
             // 2. Index Komposit untuk Riwayat Berurut (Sangat Cepat)
-            $table->index(['user_id', 'created_at']);
+            $table->index('created_at');
         });
     }
 

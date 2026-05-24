@@ -108,13 +108,15 @@
              2. FLOATING CATEGORIES
              ================================================================ --}}
         <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-40 -mt-24 mb-20">
-            <div class="bg-white rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-8 border border-gray-100">
-                <div class="text-center mb-6">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest font-['Inter']">Apa yang Anda cari?
-                    </h3>
+            <div
+                class="bg-white rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-4 sm:p-6 md:p-8 border border-gray-100">
+                <div class="text-center mb-4 md:mb-6">
+                    <h3 class="text-xs md:text-sm font-bold text-gray-400 uppercase tracking-widest font-['Inter']">Apa yang
+                        Anda cari?</h3>
                 </div>
 
-                <div class="grid grid-cols-3 md:grid-cols-6 gap-6 justify-items-center">
+                {{-- Grid di mobile 3 kolom (lebih rapat), di desktop 6 kolom --}}
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 md:gap-6 justify-items-center">
                     @php
                         $categories = [
                             ['slug' => 'rumah', 'icon' => 'fas fa-home', 'label' => 'Rumah'],
@@ -128,13 +130,15 @@
 
                     @foreach ($categories as $cat)
                         <a href="{{ route('shop.index', ['kategori_slug' => $cat['slug']]) }}"
-                            class="group flex flex-col items-center gap-3 text-decoration-none">
+                            class="group flex flex-col items-center gap-1.5 md:gap-3 text-decoration-none">
+                            {{-- Kotak Icon: w-12 h-12 text-lg di mobile, w-16 h-16 text-2xl di desktop --}}
                             <div
-                                class="w-16 h-16 rounded-2xl bg-gray-50 text-[#198754] flex items-center justify-center text-2xl transition-all duration-300 group-hover:bg-[#198754] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#198754]/30 group-hover:-translate-y-2">
+                                class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-gray-50 text-[#198754] flex items-center justify-center text-lg md:text-2xl transition-all duration-300 group-hover:bg-[#198754] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#198754]/30 group-hover:-translate-y-1 md:group-hover:-translate-y-2">
                                 <i class="{{ $cat['icon'] }}"></i>
                             </div>
+                            {{-- Teks: text-[10px] di mobile, text-sm di desktop --}}
                             <span
-                                class="text-sm font-bold text-gray-600 group-hover:text-[#198754] transition-colors font-['Inter']">{{ $cat['label'] }}</span>
+                                class="text-[10px] sm:text-xs md:text-sm font-bold text-gray-600 group-hover:text-[#198754] transition-colors font-['Inter'] text-center leading-tight">{{ $cat['label'] }}</span>
                         </a>
                     @endforeach
                 </div>
@@ -176,10 +180,8 @@
                         @foreach ($highlights as $item)
                             @php
                                 $val = $item->property;
-                                /* * LOGIKA PEMBERSIHAN DATA GAMBAR & URL
-                                 * Ini mencegah error Array String (json_decode) dan RouteNotFound
-                                 */
-                                $detailUrlRec = route('home.property-details', $val->id);
+                                $detailUrlRec = route('home.property-details', $val->slug);
+                                $propertyId = $val->id;
 
                                 $imagePath = $val->mainImage?->image_path ?? null;
                                 $mainImage = $imagePath
@@ -199,8 +201,9 @@
                                         {{-- Bagian Gambar (Kiri) & Tombol Favorit --}}
                                         {{-- =============================================== --}}
                                         <div class="lg:w-7/12 relative h-[250px] lg:h-full flex-shrink-0 overflow-hidden">
-                                            <img src="{{ $mainImage }}"
-                                                class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                            <img onclick="window.location.href='{{ $detailUrlRec }}'"
+                                                src="{{ $mainImage }}"
+                                                class="absolute inset-0 cursor-pointer w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                 alt="{{ $val->judul }}">
 
                                             {{-- Label Status --}}
@@ -254,7 +257,8 @@
                                             </div>
 
                                             <div class="mt-8 pt-6 border-t border-gray-100">
-                                                <a href="https://wa.me/{{ $val->phone ?? '62812345678' }}" target="_blank"
+                                                <a onclick="trackWhatsAppClick({{ $propertyId }})"
+                                                    href="https://wa.me/{{ $val->phone ?? '62812345678' }}" target="_blank"
                                                     class="w-full py-3.5 bg-[#25D366] hover:bg-[#1EBE55] text-white font-bold rounded-xl shadow-[0_8px_20px_rgba(37,211,102,0.3)] hover:shadow-none hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 font-['Inter'] no-underline">
                                                     <i class="fab fa-whatsapp text-xl"></i> Hubungi via WhatsApp
                                                 </a>
@@ -554,7 +558,6 @@
 
     {{-- Scripts --}}
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    {{-- <script src="{{ asset('js/property-card.js') }}"></script> --}}
     <script>
         let currentCursor = "{{ $rekomendasi->nextCursor() ? $rekomendasi->nextCursor()->encode() : '' }}";
 

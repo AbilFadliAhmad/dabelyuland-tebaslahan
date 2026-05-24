@@ -44,10 +44,10 @@ class HomeController extends Controller
         $request['lng'] = 112.2331;
         $highlights = $this->searchPropertyNearby($request); // Query Spasial Berat
         $testimonis = Testimoni::orderBy('created_at', 'desc')->take(3)->get();
-        $banners = Banner::where('is_active', true)->get();
+        $banners = Banner::where('status', 'aktif')->get();
 
         // Data awal rekomendasi
-        $rekomendasi = $queryRekomendasi->cursorPaginate(10);
+        $rekomendasi = $queryRekomendasi->cursorPaginate(1);
 
         return view('frontside.home', compact('testimonis', 'banners', 'rekomendasi', 'highlights'));
     }

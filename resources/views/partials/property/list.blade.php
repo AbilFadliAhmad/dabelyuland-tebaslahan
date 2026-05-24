@@ -151,10 +151,10 @@
 
         function showDeletePopup(id) {
             Swal.fire({
-                title: '<span class="text-xl font-bold text-gray-800">Konfirmasi Penghapusan</span>',
+                title: '<span class="text-xl font-bold text-gray-800">Arsipkan Properti</span>',
                 html: `
             <div class="text-left mt-4 space-y-3">
-                <p class="text-sm text-gray-500 mb-4">Mohon pilih alasan penghapusan lahan untuk membantu pendataan kami.</p>
+                <p class="text-sm text-gray-500 mb-4">Mohon pilih alasan pengarsipan properti untuk membantu pendataan kami.</p>
 
                 <!-- Opsi Utama: Tebaslahan (Paling Atas & Stand Out) -->
                 <label class="flex items-center p-3 border-2 border-teal-100 rounded-xl cursor-pointer hover:bg-teal-50 hover:border-teal-300 transition-all group">
@@ -192,9 +192,9 @@
             </div>
         `,
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus',
+                confirmButtonText: 'Ya, Arsipkan!',
                 cancelButtonText: 'Batal',
-                confirmButtonColor: '#ef4444', // Red-500
+                confirmButtonColor: '#9C27B0', // Red-500
                 cancelButtonColor: '#9ca3af', // Gray-400
                 padding: '2rem',
                 customClass: {

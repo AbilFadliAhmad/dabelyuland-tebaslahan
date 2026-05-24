@@ -12,6 +12,7 @@ class Testimoni extends Model
         'nama',
         'pekerjaan',
         'testimoni',
+        'rating',
         'foto',
     ];
 }

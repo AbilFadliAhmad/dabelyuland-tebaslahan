@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\FcmController;
 use App\Models\Property;
 use App\Models\GalleryProperty;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class PropertyController extends Controller
 
         // 5. Eksekusi query ke database
         $query->whereNotIn('status', ['draft', 'dihapus', 'terjual']);
-        $properties = $query->with('mainImage')->get();
+        $properties = $query->orderBy('id', 'desc')->with('mainImage')->get();
 
         return view('partials.property.list', compact('properties', 'typeProperty', 'user'));
     }
@@ -134,6 +135,7 @@ class PropertyController extends Controller
             '*.required' => ':Attribute wajib diisi.',
             '*.in'       => 'Pilihan :attribute tidak valid.',
         ]);
+        
         $user = Auth::user();
 
         // 2. Mencari Data Properti
@@ -142,7 +144,7 @@ class PropertyController extends Controller
 
         // [Opsional] Keamanan: Pastikan yang mengedit adalah pemilik properti atau admin
         if ($user->role !== 'admin' && $property->user_id !== $user->id) {
-            abort(403, 'Anda tidak memiliki akses untuk mengedit properti ini.');
+            abort(403, 'Anda tidak memiliki akses untuk pada properti ini.');
         }
 
         DB::transaction(function () use ($request, $property, $validated, $user) {
@@ -153,17 +155,67 @@ class PropertyController extends Controller
 
             // Panggil method yang sama di sini
             $this->syncPropertyImages($request, $property);
+
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'create',
+                'description' => "Pengguna {$user->name} berhasil membuat listing properti baru: '{$request->judul}' dengan ID #{$property->id}.",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
         });
 
-        // 7 Perbarui SessionId
-        $request->session()->regenerate();
-
-        // 7. Redirect Pengguna
-        // Arahkan kembali ke halaman index sesuai role user
-        $route = $user->role === 'admin' ? 'admin.buildings.index' : 'user.buildings.index';
+        // Ambil variabel penting untuk FCM sebelum session & koneksi dimatikan
+        $notiKota = $property->kota;
+        $notiTipe = $property->tipe;
+        $notiSlug = $property->slug;
+        $notiId   = $property->id;
         
-        return redirect()->route($route)
-            ->with('success', 'Data properti berhasil diperbarui dan disimpan.');
+        $userRole = $user->role;
+        $userName = $user->name;
+        $adminUrl = $property->tipe === 'tanah' ? route('admin.lands.index') : route('admin.buildings.index');
+
+        // Perbarui Session ID & Flash Message
+        session()->regenerate();
+        session()->flash('success', 'Data properti berhasil diperbarui dan disimpan.');
+        session()->save();
+
+        $targetRoute = $userRole === 'admin' ? 'admin.buildings.index' : 'user.buildings.index';
+        $redirectUrl = route($targetRoute);
+
+        // =========================================================================
+        // TRICK: REDIRECT & PUTUS KONEKSI BROWSER (PENGGUNA INSTAN PINDAH HALAMAN)
+        // =========================================================================
+        header("Location: $redirectUrl");
+        header("Connection: close");
+        header("Content-Length: 0");
+        
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request(); 
+        }
+
+        // ==============================================================
+        // 3. LOGIKA PENGIRIMAN NOTIFIKASI
+        // ==============================================================
+        try {
+            set_time_limit(60); 
+
+            // A. Kirim notifikasi FCM ke pengguna yang subscribe kota tersebut
+            FcmController::sendNotificationNewProperty($notiKota, $notiTipe, $notiSlug, $notiId);
+
+            // B. Kirim notifikasi FCM ke Admin jika yang membuat adalah user biasa
+            if ($userRole !== 'admin') {
+                $adminTitle = "Properti Menunggu Validasi";
+                $adminBody = "Properti baru saja diunggah/diperbarui oleh {$userName} dan membutuhkan validasi.";
+                
+                FcmController::sendNotification('admin', $adminTitle, $adminBody, $adminUrl);
+            }
+        } catch (\Exception $e) {
+            Log::error("Notifikasi Properti Latar Belakang Gagal: " . $e->getMessage());
+        }
+
+        exit;
     }
 
      // Update - hanya pemilik atau admin
@@ -171,7 +223,8 @@ class PropertyController extends Controller
     {
         // 1. Otorisasi (Gunakan find agar hemat query)
         $property = Property::findOrFail($request->id);
-        if (Auth::user()->id !== $property->user_id && Auth::user()->role !== 'admin') {
+        $user = Auth::user();
+        if ($user->id !== $property->user_id && $user->role !== 'admin') {
             abort(403, 'Akses ditolak: Anda bukan pemilik properti ini.');
         }
 
@@ -184,7 +237,6 @@ class PropertyController extends Controller
             
          // 2. Validasi (Gunakan wildcard untuk pesan error)
         $validated = $request->validate([
-            'judul'             => 'required|string|max:255',
             'harga'             => 'required|integer|min:0',
             'deskripsi'         => 'required|string',
             'tipe'              => 'required|in:apartemen,rumah,ruko,kantor,gudang,tanah',
@@ -206,12 +258,22 @@ class PropertyController extends Controller
         ]);
 
         // Gunakan DB Transaction agar proses upload gambar & update data sinkron
-        DB::transaction(function () use ($request, $property, $validated) {
+        DB::transaction(function () use ($request, $property, $validated, $user) {
             // Update data text
             $property->update($validated);
 
             // Panggil method sinkronisasi gambar
             $this->syncPropertyImages($request, $property);
+
+            // Update audit log
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'update',
+                'description' => "Pengguna {$user->name} memperbarui rincian data pada properti '{$property->judul}' (ID #{$property->id}).",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
         });
 
         // Redirect setelah sukses
@@ -222,7 +284,7 @@ class PropertyController extends Controller
                         ->with('success', 'Data properti berhasil diperbarui!');   
     }
 
-    private function syncPropertyImages(Request $request, $property)
+    private function syncPropertyImages(Request $request, Property $property)
     {
         $keys = ['-image_low.webp', '-image_high.webp', '-image_ori.webp'];
 
@@ -294,7 +356,7 @@ class PropertyController extends Controller
         ]);
 
         // Validasi gambar jika yang diupload adalah sampul utama
-        if ($request->sort == 1) {
+        if ($request->sort == 99) {
             // $isBuilding = ($request->tipe !== 'tanah');
             $check = $this->checkImageIsProperty($request->file('image_high'), $request->typeProperty == 'building');
             // Tambahkan true agar menjadi array, bukan stdClass
@@ -466,7 +528,7 @@ class PropertyController extends Controller
             : view('user.buildings.show', compact('building'));
     }
 
-    // Mengarsipkan properti di tempat sampah (mengubah status menjadi dihapus atau terjual)
+    // Mengarsipkan properti (mengubah status menjadi dihapus atau terjual)
     public function archive(Request $request, Property $property)
     {
         // 1. Otorisasi
@@ -489,15 +551,31 @@ class PropertyController extends Controller
             'lainnya'       => 'Lainnya: ' . $otherReasonText,
         ];
 
-        $property->update([
-            'status'         => $newStatus,
-            'deleted_reason' => $reasons[$reasonKey] ?? 'Tanpa alasan spesifik',
-            'is_tersedia'    => false, // Otomatis tidak tersedia di web
-        ]);
+        $resolvedReason = $reasons[$reasonKey] ?? 'Tanpa alasan spesifik';
+        $user = Auth::user();
+
+        // Jalankan update properti dan log audit dalam satu transaksi bersama
+        DB::transaction(function () use ($property, $newStatus, $resolvedReason, $user) {
+            $property->update([
+                'status'         => $newStatus,
+                'deleted_reason' => $resolvedReason,
+                'is_tersedia'    => false, // Otomatis tidak tersedia di web
+            ]);
+
+            // Audit Log untuk aksi pengarsipan / penjualan properti
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'update',
+                'description' => "Pengguna {$user->name} mengarsipkan properti '{$property->judul}' (ID #{$property->id}) dengan status baru: '{$newStatus}' karena: {$resolvedReason}.",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
+        });
 
         $message = ($newStatus === 'terjual') 
             ? 'Selamat! Properti berhasil ditandai sebagai Terjual.' 
-            : 'Properti telah berhasil dihapus dari daftar aktif.';
+            : 'Properti telah berhasil diarsipkan dari daftar aktif.';
 
         return back()->with('success', $message);
     }
@@ -510,10 +588,27 @@ class PropertyController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengubah status properti ini.');
         }
 
-        // 2. Toggle Status: Gunakan operator NOT (!) untuk membalikkan nilai boolean
-        $property->update([
-            'is_tersedia' => !$property->is_tersedia
-        ]);
+        $user = Auth::user();
+        $targetAvailability = !$property->is_tersedia;
+
+        DB::transaction(function () use ($property, $targetAvailability, $user) {
+            // 2. Toggle Status
+            $property->update([
+                'is_tersedia' => $targetAvailability
+            ]);
+
+            $statusText = $targetAvailability ? 'Tersedia Kembali' : 'Sedang Disewa';
+
+            // Audit Log ketersediaan/sewa properti
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'update',
+                'description' => "Pengguna {$user->name} mengubah ketersediaan sewa properti '{$property->judul}' (ID #{$property->id}) menjadi: '{$statusText}'.",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
+        });
 
         // 3. Pesan Dinamis: Memberikan feedback yang lebih jelas ke user
         $status = $property->is_tersedia ? 'tersedia kembali' : 'Sedang disewa';
@@ -529,11 +624,24 @@ class PropertyController extends Controller
             abort(403, 'Akses ditolak: Anda tidak memiliki izin untuk mengubah visibilitas properti ini.');
         }
 
-        // 2. Logika Toggle: Tentukan status baru
+        $user = Auth::user();
         $isNowActive = $property->status !== 'aktif'; 
         $newStatus = $isNowActive ? 'aktif' : 'non-aktif';
 
-        $property->update(['status' => $newStatus]);
+        DB::transaction(function () use ($property, $newStatus, $user) {
+            // 2. Logika Toggle
+            $property->update(['status' => $newStatus]);
+
+            // Audit Log visibilitas tayang properti
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'update',
+                'description' => "Pengguna {$user->name} mengubah status tayang properti '{$property->judul}' (ID #{$property->id}) menjadi: '{$newStatus}'.",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
+        });
 
         // 3. Pesan Feedback yang Dinamis
         $message = $isNowActive 
@@ -543,6 +651,7 @@ class PropertyController extends Controller
         return back()->with('success', $message);
     }
 
+    // Admin verifikasi proeprti
     public function verifyProperty(Property $property)
     {
         // 1. Otorisasi: Pastikan hanya pemilik atau admin yang bisa akses
@@ -550,12 +659,59 @@ class PropertyController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk memverifikasi properti ini.');
         }
 
-        // 2. Verifikasi Properti
-        $property->update([
-            'status' => 'aktif'
-        ]);
+        $user = Auth::user();
+        DB::transaction(function () use ($property, $user) {
+            // 2. Verifikasi Properti
+            $property->update([
+                'status' => 'aktif'
+            ]);
 
-        // 3. Pesan Dinamis: Memberikan feedback yang lebih jelas ke user        
-        return back()->with('success', "Properti ini telah berhasil diverifikasi.");
+            // Audit Log untuk aksi verifikasi oleh admin
+            DB::table('audit_logs')->insert([
+                'user_id'     => $user->id,
+                'type'        => 'properti',
+                'action'      => 'update',
+                'description' => "Admin {$user->name} menyetujui dan memverifikasi listing properti '{$property->judul}' (ID #{$property->id}) agar aktif di platform.",
+                'created_at'  => now(),
+                'updated_at'  => now()
+            ]);
+        });
+
+        // Ambil semua variabel penting yang dibutuhkan oleh FCM sebelum session & koneksi dimatikan
+        $fcmTarget = "user_{$property->user_id}"; // Menghapus petik satu bungkus internal agar string bersih (cth: user_12)
+        $fcmTitle  = 'Verifikasi Properti';
+        $fcmBody   = "Properti '{$property->judul}' telah berhasil diverifikasi oleh admin.";
+        $fcmUrl    = $property->tipe === 'tanah' ? route('user.lands.index') : route('user.buildings.index');
+
+        // Set flash message ke dalam session sebelum koneksi dialihkan
+        session()->flash('success', "Properti ini telah berhasil diverifikasi.");
+        session()->save();
+
+        // =========================================================================
+        // ASYNC TRICK: REDIRECT BACK & PUTUS KONEKSI BROWSER INSTAN
+        // =========================================================================
+        header("Location: " . url()->previous());
+        header("Connection: close");
+        header("Content-Length: 0");
+        
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request(); 
+        }
+
+        // =========================================================================
+        // ASYNC BACKGROUND PROCESS (ADMIN SUDAH SELESAI REFRESH HALAMAN)
+        // =========================================================================
+        try {
+            set_time_limit(60); // Amankan batas eksekusi script di latar belakang
+
+            // Kirim notifikasi FCM menggunakan layanan pihak ketiga secara mandiri
+            FcmController::sendNotification($fcmTarget, $fcmTitle, $fcmBody, $fcmUrl);
+            
+        } catch (\Exception $e) {
+            // Catat eror ke log Laravel jika koneksi pihak ketiga gagal tanpa mengganggu admin
+            Log::error("FCM Verifikasi Properti Latar Belakang Gagal: " . $e->getMessage());
+        }
+
+        exit;
     }
 }

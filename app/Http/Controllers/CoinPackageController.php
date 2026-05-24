@@ -22,6 +22,7 @@ class CoinPackageController extends Controller
 
     public function store(Request $request)
     {
+        dd($request->all());
         $request->validate([
             'koin' => 'required|integer|min:1',
             'harga' => 'required|integer|min:1',

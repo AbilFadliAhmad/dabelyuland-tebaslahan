@@ -18,7 +18,7 @@ return new class extends Migration
             
             // Kolom dasar
             $table->string('image')->nullable(); // path gambar
-            $table->boolean('is_active')->default(false); 
+            $table->enum('status', ['aktif', 'nonaktif', 'menunggu'])->default('menunggu'); 
 
             // Waktu
             $table->date('expired_at')->default(now()->addDays(7));

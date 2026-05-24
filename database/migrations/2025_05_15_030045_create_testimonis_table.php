@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nama');
             $table->string('pekerjaan');
             $table->text('testimoni');
+            $table->decimal('rating', 2, 1)->unsigned()->default(5.0); // Tambah kolom ini
             $table->string('foto')->nullable(); // Untuk menyimpan path foto
             $table->timestamps();
         });

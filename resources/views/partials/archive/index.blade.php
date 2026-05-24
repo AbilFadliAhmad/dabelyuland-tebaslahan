@@ -34,7 +34,7 @@
         {{-- HEADER --}}
         <div class="mb-4">
             <h2 class="text-2xl font-bold text-gray-900 m-0">
-                Riwayat Properti
+                Arsip Properti
             </h2>
             <p class="text-sm text-gray-500 m-0 mt-1">Pantau data properti yang sudah terjual, ditolak, atau dihapus dari
                 sistem.</p>
@@ -82,16 +82,13 @@
                     </thead>
                     <tbody id="archiveTableBody">
                         @forelse($trashedProperties as $property)
-                            @include('admin.trash.row', ['property' => $property])
+                            @include('partials.archive.row', ['property' => $property])
                         @empty
                             <tr>
                                 <td colspan="5" class="text-center py-12">
                                     <div class="flex flex-col items-center justify-center text-gray-500">
-                                        <i class="bi bi-trash mb-3 text-[3rem] text-slate-300"></i>
-                                        <h6 class="font-bold text-gray-700 mb-1">Belum ada Properti yang dihapus</h6>
-                                        <p class="text-sm m-0">Klik tombol "Tambah Properti" untuk memasukkan data properti
-                                            baru.
-                                        </p>
+                                        <i class="bi bi-archive mb-3 text-[3rem] text-slate-300"></i>
+                                        <h6 class="font-bold text-gray-700 mb-1">Belum ada Properti yang diarsipkan</h6>
                                     </div>
                                 </td>
                             </tr>
@@ -112,7 +109,6 @@
 
 @section('script')
     <script>
-        
         let currentPage = 1;
         let currentStatus = 'all';
         let currentAgent = '';
@@ -130,16 +126,15 @@
             }
 
             // Bangun URL dengan parameter query
-            const url =
-                `{{ route('admin.properties.trash') }}?page=${currentPage}&status=${currentStatus}&agent=${currentAgent}`;
-
+            let url =
+                `{{ route('account.properties.archive') }}?page=${currentPage}&status=${currentStatus}&agent=${currentAgent}&is_ajax=1`;
             try {
                 const response = await fetch(url, {
                     headers: {
+                        'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
-                    } // Memberitahu Laravel ini adalah request AJAX
+                    }
                 });
-
                 const data = await response.json();
 
                 if (isNewFilter) {
@@ -156,7 +151,7 @@
                 }
 
             } catch (error) {
-                console.error('Error fetching properties:', error);
+                console.error(error);
                 tableBody.innerHTML =
                     '<tr><td colspan="5" class="text-center py-10 text-rose-500">Gagal memuat data.</td></tr>';
             }

@@ -54,6 +54,28 @@
     {{-- CSRF Token --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Axios --}}
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+
+    {{-- Inisialisasi Quest Harian & Auto-Login --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const questCookieName = 'daily_quest_initialized';
+
+            if (document.cookie.indexOf(questCookieName + '=') === -1) {
+                const maxAgeSeconds = getSecondsUntilMidnightWIB();
+                document.cookie = questCookieName + "=true; max-age=" + maxAgeSeconds + "; path=/";
+
+                const url = '{{ route('user.quest.init') }}';
+
+                let formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+
+                navigator.sendBeacon(url, formData);
+            }
+        });
+    </script>
     @yield('style')
 </head>
 

@@ -17,25 +17,32 @@ use Illuminate\Http\Request;
 
 class HighlightController extends Controller
 {
-    public function index()
+      function index()
     {
         $highlights = PropertyHighlight::with(['user', 'property', 'mainImage'])
                                         ->limit(20)
                                         ->get(); 
 
+        // $recommendationIds = DB::table('property_recommendations')->select('property_id')->orderBy('pushed_at', 'desc')->limit(20)->get();
         $recommendations = PropertyRecommendation::with(['user', 'property', 'mainImage'])
                                                     ->limit(20)
                                                     ->orderBy('pushed_at', 'desc')
                                                     ->get(); 
 
-        $wallets = UserWallet::select('dabelyu_koin', 'highlight_quota', 'recommendation_quota', 'push_quota')->where('user_id', Auth::user()->id)->first();
+        $wallets = db::table('user_wallets')->select('dabelyu_koin', 'highlight_quota', 'recommendation_quota', 'push_quota')->where('user_id', Auth::user()->id)->first();
         $dabelyu_koin = $wallets->dabelyu_koin;
         $highlight_quota = $wallets->highlight_quota;
         $recommendation_quota = $wallets->recommendation_quota;
         $push_quota = $wallets->push_quota;
 
         // Pastikan path view sesuai dengan tempat kamu menyimpan file list.blade.php tadi
-        return view('admin.highlight.list', compact('highlights', 'recommendations', 'dabelyu_koin', 'highlight_quota', 'recommendation_quota', 'push_quota')); 
+        return view('partials.highlight.list', compact('highlights', 'recommendations', 'dabelyu_koin', 'highlight_quota', 'recommendation_quota', 'push_quota')); 
+    }
+
+    public function create() {
+        $service = DB::table('service_prices')->whereIn('jenis_layanan', ['highlight', 'rekomendasi'])->get(); 
+        $wallet = DB::table('user_wallets')->where('user_id', Auth::user()->id)->first();
+        return view('partials.highlight.form', compact('service', 'wallet'));
     }
 
     public function searchProperties(Request $request) 
@@ -90,7 +97,7 @@ class HighlightController extends Controller
         // 1. Validasi Input
         $request->validate([
             'property_id' => 'required|exists:properties,id',
-            'duration'    => 'required|in:1_minggu,2_minggu,1_bulan',
+            'service_id'    => 'required',
             'type'        => 'required|in:highlight,rekomendasi',
         ], [
             'property_id.required' => 'Properti wajib dipilih.',
@@ -112,23 +119,14 @@ class HighlightController extends Controller
             return back()->with('error', "Gagal! Properti ini sudah terdaftar sebagai " . ucfirst($request->type) . " yang aktif.");
         }
 
-        // 4. PRICING LOGIC (Highlight dibuat lebih mahal)
-        $pricingTable = [
-            'rekomendasi' => [
-                '1_minggu' => ['days' => 7,  'price' => 50],
-                '2_minggu' => ['days' => 14, 'price' => 90],
-                '1_bulan'  => ['days' => 30, 'price' => 150],
-            ],
-            'highlight' => [
-                '1_minggu' => ['days' => 7,  'price' => 120], // Lebih mahal dari rekomendasi
-                '2_minggu' => ['days' => 14, 'price' => 220],
-                '1_bulan'  => ['days' => 30, 'price' => 450],
-            ]
-        ];
+        $servicePrice = (object) DB::table('service_prices')->where('id', $request->service_id)->first();
 
-        $selectedTypePrice = $pricingTable[$request->type][$request->duration];
-        $costInKoin = $selectedTypePrice['price'];
-        $expiryDate = Carbon::now()->addDays($selectedTypePrice['days']);
+        if (!$servicePrice || $servicePrice->jenis_layanan !== $request->type) {
+            return redirect()->back()->with('error', 'Paket durasi atau jenis layanan tidak valid.');
+        }
+
+        $costInKoin = $servicePrice->biaya_koin;
+        $expiryDate = Carbon::now('Asia/Jakarta')->addDays($servicePrice->jumlah_hari)->endOfDay()->toDateTimeString();
 
         try {
             DB::transaction(function () use ($request, $ownerId, $property, $costInKoin, $expiryDate) {
@@ -172,7 +170,7 @@ class HighlightController extends Controller
                 }
             });
 
-            return redirect()->route('admin.highlight.index')
+            return redirect()->route('account.highlight.index')
                             ->with('success', 'Berhasil! Properti kini berstatus ' . ucfirst($request->type));
 
         } catch (\Exception $e) {

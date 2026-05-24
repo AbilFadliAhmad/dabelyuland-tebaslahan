@@ -58,7 +58,8 @@
             {{-- ==========================================
              3. MAIN CARD (KONTEN PENGATURAN LOKASI)
              ========================================== --}}
-            <div id="mainCard" class="bg-white rounded-3xl md:rounded-4xl shadow-sm border border-gray-100 p-5 md:p-8">
+            <div id="mainCard"
+                class="bg-white rounded-3xl md:rounded-4xl shadow-sm border border-gray-100 p-5 md:p-8 transition-opacity duration-300">
 
                 {{-- Bagian A: Search Bar Tambah Lokasi --}}
                 <div class="relative mb-6 md:mb-8">
@@ -95,7 +96,6 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2.5 md:gap-3" id="activeLocations">
-
                     </div>
 
                     {{-- Empty State (Tampil jika tidak ada lokasi) --}}
@@ -123,7 +123,7 @@
 @section('scripts')
     <script>
         /**
-         * KONFIGURASI & STATE GLOBAL
+         * 1. KONFIGURASI & STATE GLOBAL
          */
         const UI_CLASSES = {
             ACTIVE_TEXT: 'text-[#0d9488]',
@@ -133,37 +133,94 @@
             INPUT_DISABLED: ['opacity-50', 'cursor-not-allowed']
         };
 
-        // State Aplikasi
+        // State Aplikasi (Struktur: [{name: "Jakarta"}, {name: "Surabaya"}])
         let activeLocations = JSON.parse(localStorage.getItem('activeLocations')) || [];
         let topSuggestion = null;
         let searchTimeout = null;
 
         /**
-         * SELEKTOR ELEMEN
-         * Menggunakan getter agar elemen dicari saat DOM sudah siap
+         * 2. SELEKTOR ELEMEN
          */
         const getElements = () => ({
             masterToggle: document.getElementById('masterToggle'),
             statusLabel: document.getElementById('notifLabelText'),
             statusDesc: document.getElementById('notifStatusText'),
             container: document.getElementById('toggleContainer'),
+            mainCard: document.getElementById('mainCard'),
             cityInput: document.getElementById('searchCity'),
             addBtn: document.getElementById('addCityBtn'),
             suggestionBox: document.getElementById('suggestionBox'),
             activeLocationsList: document.getElementById('activeLocations'),
-            counter: document.getElementById('countActiveCity')
+            counter: document.getElementById('countActiveCity'),
+            emptyState: document.getElementById('emptyState')
         });
 
         // ==========================================
-        // FUNGSI CORE (LOGIKA DATA)
+        // 3. FUNGSI CORE (LOGIKA TAMBAH & HAPUS)
         // ==========================================
 
         /**
-         * Menyimpan Lokasi Aktif ke Firebase.
+         * Menambahkan lokasi baru
+         */
+        const addLocation = () => {
+            const el = getElements();
+
+            // Validasi: Pastikan ada suggestion yang dipilih/ditangkap
+            if (!topSuggestion) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Oops...',
+                    text: 'Pilih kota yang valid dari daftar saran pencarian terlebih dahulu.'
+                });
+                return;
+            }
+
+            const cityName = topSuggestion.name;
+
+            // Validasi Duplikasi (Case Insensitive)
+            const isDuplicate = activeLocations.some(loc => loc.name.toLowerCase() === cityName.toLowerCase());
+
+            if (isDuplicate) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sudah Ada',
+                    text: 'Kota ini sudah ada dalam daftar pantauan Anda.'
+                });
+                return;
+            }
+
+            // Tambahkan ke State Array
+            activeLocations.push(topSuggestion);
+
+            // Render UI
+            renderPill(cityName);
+            updateCounterAndEmptyState();
+
+            // Bersihkan Form
+            el.cityInput.value = '';
+            resetSuggestions();
+        };
+
+        /**
+         * Menghapus lokasi dari state dan UI (terhubung ke inline onclick)
+         */
+        window.removeLocation = function(btn) {
+            const pill = btn.closest('.location-pill');
+            const cityName = pill.getAttribute('data-name');
+
+            // Update State Array (Buang kota yang dihapus)
+            activeLocations = activeLocations.filter(loc => loc.name !== cityName);
+
+            // Update UI
+            pill.remove();
+            updateCounterAndEmptyState();
+        };
+
+        /**
+         * Menyimpan Pengaturan ke Laravel & Firebase
          */
         async function saveSettings() {
             try {
-                // Tampilkan Loading State
                 Swal.fire({
                     title: 'Sinkronisasi...',
                     text: 'Mendaftarkan lokasi ke sistem notifikasi',
@@ -175,32 +232,31 @@
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') throw new Error("Izin notifikasi ditolak.");
 
-                // STEP 2: Registrasi Manual (Sangat Disarankan)
+                // STEP 2 & 3: Ambil FCM Token
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                     scope: '/'
                 });
                 await navigator.serviceWorker.ready;
-
-                // STEP 3: Ambil Token dengan menyertakan registration
-                const token = await window.getFirebaseToken(window.firebaseMessaging, {
-                    serviceWorkerRegistration: registration, // Sertakan ini agar lebih stabil
+                const token = await getFirebaseToken(firebaseMessaging, {
+                    serviceWorkerRegistration: registration,
                     vapidKey: 'BO98ZwFeBDp7k0VX0UpOrkHzmgQjwERBEI1Fu5nO-31TBcrQ9FoNcMWhyyhajgxbbNCYlFlMdNEnfhypMEeJngg'
                 });
 
                 if (!token) throw new Error("Gagal mendapatkan token. Cek konfigurasi Firebase.");
 
-                // STEP 4: Kirim ke Laravel
+                // STEP 4: Kirim ke Server
                 const topicList = activeLocations.map(loc => loc.name);
-                const response = await fetch("{{ route('subscribe-topics') }}", {
+                const oldTopics = JSON.parse(localStorage.getItem('activeLocations')) || [];
+
+                const response = await fetch("{{ route('subscribe-notification-topics') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
                     },
                     body: JSON.stringify({
                         fcm_token: token,
-                        old_topics: localStorage.getItem('activeLocations') ? JSON.parse(localStorage
-                            .getItem('activeLocations')) : [],
+                        old_topics: oldTopics,
                         topics: topicList,
                         new_topics: topicList
                     })
@@ -208,7 +264,7 @@
 
                 if (!response.ok) throw new Error("Gagal sinkronisasi dengan server Laravel.");
 
-                // STEP 5: Berhasil
+                // STEP 5: Sukses
                 localStorage.setItem('activeLocations', JSON.stringify(activeLocations));
                 localStorage.setItem('fcmToken', token);
 
@@ -225,76 +281,52 @@
             }
         }
 
-        /**
-         * Menghapus lokasi dari state dan UI.
-         * Dipanggil via onclick="removeLocation(this)" di HTML.
-         */
-        function removeLocation(btn) {
-            const el = getElements();
-            const pill = btn.closest('.location-pill');
-            const cityName = pill.getAttribute('data-name');
-
-            // Update State
-            activeLocations = activeLocations.filter(loc => loc.name !== cityName);
-
-            // Update UI
-            pill.remove();
-            updateCounter();
-        }
-
-        /**
-         * Menambahkan lokasi baru ke state dan UI (Belum tersimpan ke storage)
-         */
-        const addLocation = (cityObj) => {
-            const el = getElements();
-            const isDuplicate = activeLocations.some(loc => loc.name === cityObj.name);
-
-            if (!isDuplicate) {
-                activeLocations.push(cityObj);
-                renderPill(cityObj.name);
-                updateCounter();
-            }
-
-            el.cityInput.value = '';
-            resetSuggestions();
-        };
-
-        const updateCounter = () => {
-            const el = getElements();
-            if (el.counter) el.counter.textContent = activeLocations.length;
-        };
 
         // ==========================================
-        // FUNGSI UI (RENDERING & STYLING)
+        // 4. FUNGSI UI (RENDERING & UPDATE)
         // ==========================================
 
         /**
-         * Membuat elemen visual kota (Pill)
+         * Render Pill Badge Lokasi
          */
         const renderPill = (name) => {
             const el = getElements();
-            const pill = document.createElement('div');
-            pill.className =
-                "location-pill inline-flex items-center bg-white border border-[#0d9488] text-[#0d9488] px-4 py-2 rounded-full text-sm font-semibold transition group hover:bg-[#0d9488] hover:text-white cursor-pointer shadow-sm";
-            pill.setAttribute('data-name', name);
+            const pillHTML = `
+                <div class="location-pill inline-flex items-center bg-white border border-[#0d9488] text-[#0d9488] px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-semibold transition group hover:bg-[#0d9488] hover:text-white cursor-pointer shadow-sm animate-pulse-once" data-name="${name}">
+                    <i class="fas fa-map-marker-alt mr-1.5 md:mr-2 text-[10px] md:text-xs"></i> 
+                    ${name}
+                    <button type="button" class="ml-2 md:ml-3 text-[#0d9488] group-hover:text-white focus:outline-none hover:scale-110 transition-transform" onclick="removeLocation(this)">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+            el.activeLocationsList.insertAdjacentHTML('beforeend', pillHTML);
+        };
 
-            pill.innerHTML = `
-                                <i class="fas fa-map-marker-alt mr-2 text-xs"></i>
-                                <span>${name}</span>
-                                <button type="button" class="ml-3 text-[#0d9488] group-hover:text-white focus:outline-none hover:scale-110 transition-transform" onclick="removeLocation(this)">
-                                    <i class="fas fa-times text-xs"></i>
-                                </button>
-                            `;
-            el.activeLocationsList.appendChild(pill);
+        /**
+         * Update angka pada header dan toggle visibilitas Empty State
+         */
+        const updateCounterAndEmptyState = () => {
+            const el = getElements();
+            const count = activeLocations.length;
+
+            if (el.counter) el.counter.textContent = count;
+
+            if (count === 0) {
+                el.emptyState.classList.remove('hidden');
+                el.emptyState.classList.add('block');
+            } else {
+                el.emptyState.classList.add('hidden');
+                el.emptyState.classList.remove('block');
+            }
         };
 
         const updateNotificationStatusUI = async (isActive, isFetching = false) => {
             const el = getElements();
             const loadingEl = document.getElementById('notifLoading');
-            const mainCard = document.getElementById('mainCard');
             if (!el.masterToggle) return;
 
-            // --- A. UPDATE UI DASAR (Tanpa Loading) ---
+            // Update Teks & Warna
             el.statusLabel.innerText = isActive ? "Aktif" : "Mati";
             el.statusDesc.innerText = isActive ? "Pemberitahuan properti baru aktif." :
                 "Notifikasi dijeda sementara.";
@@ -304,28 +336,23 @@
                 el.container.classList.add('bg-teal-50/50', 'border-teal-100');
                 el.cityInput.disabled = false;
                 el.cityInput.classList.remove(...UI_CLASSES.INPUT_DISABLED);
-                mainCard.classList.remove('opacity-0');
-
+                el.mainCard.classList.remove('opacity-50', 'pointer-events-none');
             } else {
                 el.statusLabel.classList.replace(UI_CLASSES.ACTIVE_TEXT, UI_CLASSES.INACTIVE_TEXT);
                 el.container.classList.remove('bg-teal-50/50', 'border-teal-100');
                 el.cityInput.disabled = true;
                 el.cityInput.classList.add(...UI_CLASSES.INPUT_DISABLED);
+                el.mainCard.classList.add('opacity-50', 'pointer-events-none');
                 resetSuggestions();
-                mainCard.classList.add('opacity-0');
-
             }
 
-            // --- B. CEK APAKAH PERLU FETCH KE SERVER? ---
             if (!isFetching) {
-                // Jika hanya render awal dari localStorage, berhenti di sini.
                 updateAddButtonState(isActive && topSuggestion !== null);
                 return;
             }
 
-            // --- C. PROSES FETCHING (Dengan Loading State) ---
+            // Proses fetch (Mengubah status global di backend)
             try {
-                // Aktifkan Loading
                 loadingEl.classList.remove('hidden');
                 el.masterToggle.disabled = true;
                 el.statusLabel.style.opacity = "0.5";
@@ -334,31 +361,29 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
                     },
                     body: JSON.stringify({
                         status: isActive,
-                        topics: localStorage.getItem('activeLocations') ?
-                            JSON.parse(localStorage.getItem('activeLocations')) : [],
+                        topics: localStorage.getItem('activeLocations') ? JSON.parse(localStorage
+                            .getItem('activeLocations')) : [],
                         fcm_token: localStorage.getItem('fcmToken')
                     })
                 });
 
                 if (!response.ok) throw new Error("Gagal sinkronisasi.");
 
-                await idb_set('notificationStatus', isActive);
+                localStorage.setItem('notificationStatus', isActive);
                 updateAddButtonState(isActive && topSuggestion !== null);
 
             } catch (error) {
                 console.error(error);
-                // Kembalikan toggle jika gagal
                 el.masterToggle.checked = !isActive;
-                Toast.fire({
+                if (typeof Toast !== 'undefined') Toast.fire({
                     icon: 'error',
                     title: 'Gagal sinkronisasi server'
                 });
             } finally {
-                // Matikan Loading (Hanya berjalan jika isFetching = true)
                 loadingEl.classList.add('hidden');
                 el.masterToggle.disabled = false;
                 el.statusLabel.style.opacity = "1";
@@ -385,8 +410,9 @@
             updateAddButtonState(false);
         };
 
+
         // ==========================================
-        // PENCARIAN & API
+        // 5. PENCARIAN & API (KOTAK SARAN)
         // ==========================================
 
         const handleSearchInput = async (keyword) => {
@@ -398,17 +424,17 @@
                 return;
             }
 
-            // Show Loading
             el.suggestionBox.innerHTML = `<div class="p-4 text-center text-sm text-gray-500">Mencari kota...</div>`;
             el.suggestionBox.classList.remove('hidden');
 
             searchTimeout = setTimeout(async () => {
                 try {
-                    const response = await fetch("{{ route('search-cities') }}"+"?q="+encodeURIComponent(keyword));
+                    const response = await fetch("{{ route('search-cities') }}?q=" + encodeURIComponent(
+                        keyword));
                     const cities = await response.json();
 
                     if (cities.length > 0) {
-                        topSuggestion = cities[0];
+                        topSuggestion = cities[0]; // Jadikan yang teratas sebagai default
                         renderSuggestionList(cities);
                         updateAddButtonState(true);
                     } else {
@@ -426,13 +452,12 @@
             cities.forEach(city => {
                 const item = document.createElement('li');
                 item.className =
-                    'px-4 py-3 hover:bg-teal-50 cursor-pointer text-sm border-b border-gray-50 last:border-none';
+                    'px-4 py-3 hover:bg-teal-50 cursor-pointer text-sm border-b border-gray-50 last:border-none text-gray-700 font-medium';
                 item.textContent = city.name;
                 item.onclick = () => {
-                    el.cityInput.value = city.name;
-                    topSuggestion = city;
-                    resetSuggestions();
-                    updateAddButtonState(true);
+                    addLocation();
+                    el.cityInput.value = '';
+                    el.cityInput.focus();
                 };
                 el.suggestionBox.appendChild(item);
             });
@@ -441,42 +466,43 @@
         const showNotFound = (keyword) => {
             const el = getElements();
             el.suggestionBox.innerHTML =
-                `<div class="p-4 text-center text-sm text-gray-500">Kota "${keyword}" tidak ditemukan.</div>`;
+                `<div class="p-4 text-center text-sm text-gray-700">Belum ada properti yang tersedia untuk kota "${keyword}"</div>`;
+            topSuggestion = null;
             updateAddButtonState(false);
         };
 
+
         // ==========================================
-        // INISIALISASI EVENT LISTENERS
+        // 6. INISIALISASI (saat DOM siap)
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', () => {
             const el = getElements();
 
-            // Render data awal dari localStorage
+            // 1. Render data awal dari localStorage
             activeLocations.forEach(loc => renderPill(loc.name));
-            updateCounter();
+            updateCounterAndEmptyState();
 
-            // State Toggle Utama
-            el.masterToggle.checked = localStorage.getItem('notificationStatus') === 'true';
+            // 2. Set State Toggle Utama
+            const savedToggleStatus = localStorage.getItem('notificationStatus');
+            el.masterToggle.checked = savedToggleStatus === 'true' || savedToggleStatus ===
+                null; // Default true jika belum pernah diset
             updateNotificationStatusUI(el.masterToggle.checked);
 
-            // Listener Toggle Utama
+            // 3. Event Listeners
             el.masterToggle?.addEventListener('change', (e) => updateNotificationStatusUI(e.target.checked, true));
-
-            // Listener Input Pencarian
             el.cityInput?.addEventListener('input', (e) => handleSearchInput(e.target.value.trim()));
-
-            // Listener Enter pada Input
             el.cityInput?.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') el.addBtn.click();
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Hindari form submit bawaan
+                    if (!el.addBtn.disabled) el.addBtn.click();
+                }
             });
 
-            // Listener Tombol Tambah
-            el.addBtn?.addEventListener('click', () => {
-                if (topSuggestion) addLocation(topSuggestion);
-            });
+            // Eksekusi Tombol Tambah
+            el.addBtn?.addEventListener('click', addLocation);
 
-            // Klik luar kotak saran untuk menutup
+            // Klik di luar kotak saran untuk menutup
             document.addEventListener('click', (e) => {
                 if (!el.cityInput.contains(e.target) && !el.suggestionBox.contains(e.target)) {
                     el.suggestionBox.classList.add('hidden');

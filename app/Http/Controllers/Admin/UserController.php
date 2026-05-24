@@ -4,21 +4,202 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Membership;
 use App\Models\UserWallet;
+use App\Models\Property;
 use App\Models\Banner;
 use App\Models\PropertyHighlight;
 use App\Models\PropertyRecommendation;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class UserController extends Controller
 {
-      public function index()
+public function indexDummy()
     {
-        return view('user.dashboard.index');
+        // 1. Data Wallet Dummy
+        $wallet = (object) [
+            'dabelyu_koin'         => 1250000,
+            'recommendation_quota' => 8,
+            'highlight_quota'      => 3,
+            'banner_quota'         => 1,
+            'push_quota'           => 15,
+        ];
+
+        // 2. Data Membership Dummy
+        // Anda bisa mengubah 'name' menjadi 'Bronze', 'Silver', atau 'Basic' untuk melihat perubahan warna dinamis di UI
+        $membership = (object) [
+            'name'                 => 'Gold Premium', 
+            'recommendation_quota' => 10,
+            'highlight_quota'      => 5,
+            'banner_quota'         => 2,
+        ];
+
+        // 3. Data Traffic Sources Dummy (Persentase idealnya berjumlah 100)
+        $trafficSources = [
+            'wa'      => 45,
+            'fb'      => 25,
+            'ig'      => 15,
+            'twitter' => 10,
+            'other'   => 5,
+        ];
+
+        // 4. Data Chart Dummy (7 Hari Terakhir)
+        $chartLabels = ['Jumat', 'Sabtu', 'Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis'];
+        $chartViews  = [120, 180, 250, 140, 160, 210, 300];
+        $chartWa     = [15, 22, 35, 18, 20, 28, 45];
+
+        // 5. Data Top Properties Dummy
+        $topProperties = collect([
+            (object) [
+                'judul'       => 'Rumah Minimalis Modern Jakarta Selatan',
+                'views_count' => 1450,
+                'mainImage'   => null // Sengaja di-set null agar memicu gambar placeholder dari via.placeholder.com di Blade
+            ],
+            (object) [
+                'judul'       => 'Apartemen 2BR Sudirman Pusat Kota',
+                'views_count' => 1230,
+                'mainImage'   => null
+            ],
+            (object) [
+                'judul'       => 'Ruko 3 Lantai Strategis Surabaya',
+                'views_count' => 890,
+                'mainImage'   => null
+            ]
+        ]);
+
+        // 6. Data Worst Properties Dummy
+        $worstProperties = collect([
+            (object) [
+                'judul'       => 'Tanah Kavling Ujung Berung',
+                'views_count' => 12,
+                'mainImage'   => null
+            ],
+            (object) [
+                'judul'       => 'Rumah Tua Butuh Renovasi Depok',
+                'views_count' => 5,
+                'mainImage'   => null
+            ],
+            (object) [
+                'judul'       => 'Gudang Terbengkalai Bekasi Timur',
+                'views_count' => 2,
+                'mainImage'   => null
+            ]
+        ]);
+
+        // Kembalikan ke view persis seperti aslinya
+        return view('user.dashboard.index', compact(
+            'wallet', 
+            'membership', 
+            'topProperties', 
+            'worstProperties',
+            'trafficSources', 
+            'chartLabels', 
+            'chartViews', 
+            'chartWa'
+        ));
+    }
+
+    public function index()
+    {
+        $today = Carbon::today()->toDateString();
+        $userId = Auth::user()->id;
+
+        $last7Days = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $last7Days->push(Carbon::today()->subDays($i)->toDateString());
+        }
+        $sevenDaysAgo = $last7Days->first();
+
+        // Mengambil dompet user beserta batas maksimal dari paket membership miliknya
+        $wallet = UserWallet::where('user_id', $userId)->first();
+        $membership = Membership::find($wallet->membership_id);
+
+        $propAnalytics7Days = DB::table('property_analytics')
+            ->whereBetween('date', [$sevenDaysAgo, $today])
+            ->whereIn('property_id', Property::where('user_id', $userId)->pluck('id')->toArray())
+            ->selectRaw('
+                date,
+                SUM(views_count) as views_count, 
+                SUM(whatsapp_clicks_count) as total_wa,
+                SUM(source_wa) as total_src_wa,
+                SUM(source_fb) as total_src_fb,
+                SUM(source_ig) as total_src_ig,
+                SUM(source_twitter) as total_src_twitter,
+                SUM(source_other) as total_src_other
+            ')
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+        
+
+        $propToday = $propAnalytics7Days->get($today);
+        $srcWa = $propToday ? $propToday->total_src_wa : 0;
+        $srcFb = $propToday ? $propToday->total_src_fb : 0;
+        $srcIg = $propToday ? $propToday->total_src_ig : 0;
+        $srcTwitter = $propToday ? $propToday->total_src_twitter : 0;
+        $srcOther = $propToday ? $propToday->total_src_other : 0;
+
+        $totalSources = ($srcWa + $srcFb + $srcIg + $srcTwitter + $srcOther) ?: 1;
+
+        $trafficSources = [
+            'wa'      => round(($srcWa / $totalSources) * 100),
+            'fb'      => round(($srcFb / $totalSources) * 100),
+            'ig'      => round(($srcIg / $totalSources) * 100),
+            'twitter' => round(($srcTwitter / $totalSources) * 100),
+            'other'   => round(($srcOther / $totalSources) * 100),
+        ];
+
+        // ==========================================
+        // EKSTRAKSI DATA CHART (7 HARI TERAKHIR)
+        // ==========================================
+        $chartLabels = [];
+        $chartViews = [];
+        $chartWa = [];
+
+
+        foreach ($last7Days as $date) {
+            $chartLabels[] = Carbon::parse($date)->translatedFormat('l'); // Nama hari otomatis lokal Indonesia
+            
+            // Total pengunjung Properti 
+            $chartViews[] = $propAnalytics7Days->has($date) ? (int) $propAnalytics7Days[$date]->views_count : 0;
+
+            // Total klik WA properti
+            $chartWa[] = $propAnalytics7Days->has($date) ? (int) $propAnalytics7Days[$date]->total_wa : 0;
+        }
+
+        $topProperties = Property::with('mainImage')
+            ->join('property_analytics', function ($join) use ($today) {
+                $join->on('properties.id', '=', 'property_analytics.property_id')
+                     ->where('property_analytics.date', '=', $today);
+            })
+            ->where('properties.status', 'aktif')
+            ->where('properties.user_id', '==', $userId)
+            ->orderByDesc('property_analytics.views_count')
+            ->select('properties.*', 'property_analytics.views_count')
+            ->take(3)
+            ->get();
+
+        // 7. WORST 3 Properti Kurang Diminati (HARI INI)
+        // SANGAT PENTING: Gunakan LEFT JOIN
+        $worstProperties = Property::with('mainImage')
+            ->leftJoin('property_analytics', function ($join) use ($today) {
+                $join->on('properties.id', '=', 'property_analytics.property_id')
+                     ->where('property_analytics.date', '=', $today);
+            })
+            ->where('properties.status', 'aktif')
+            ->where('properties.user_id', '==', $userId)
+            // Gunakan COALESCE untuk mengubah nilai NULL (jika tidak ada data analitik) menjadi 0
+            ->orderByRaw('COALESCE(property_analytics.views_count, 0) ASC')
+            ->select('properties.*', DB::raw('COALESCE(property_analytics.views_count, 0) as views_count'))
+            ->take(10)
+            ->get();
+
+        return view('user.dashboard.index', compact('wallet', 'membership', 'topProperties', 'worstProperties','trafficSources', 'chartLabels', 'chartViews', 'chartWa'));
     }
 
     // List Users
@@ -60,7 +241,7 @@ class UserController extends Controller
     }
 
     // Update Wallet User
-   public function updateWallet(Request $request)
+    public function updateWallet(Request $request)
     {
         $request->validate([
             'koin' => 'required|integer|min:0',

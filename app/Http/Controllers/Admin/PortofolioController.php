@@ -14,6 +14,7 @@ class PortofolioController extends Controller
         $portofolios = Portofolio::all();
         return view('admin.portofolio.list', compact('portofolios'));
     }
+    
     public function create()
     {
         $isEdit = false;

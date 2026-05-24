@@ -1,11 +1,11 @@
 @php
-    $statusLabel = $property->status;
+    $statusLabel = $property->status == 'dihapus' ? 'arsip' : $property->status;
 
     // Logic Badge & Row Highlight
     $badgeClass = match ($statusLabel) {
         'terjual' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'ditolak' => 'bg-amber-50 text-amber-700 border-amber-200',
-        default => 'bg-rose-50 text-rose-700 border-rose-200',
+        default => 'bg-purple-50 text-purple-700 border-purple-200',
     };
 
     $rowClass = $statusLabel === 'terjual' ? 'bg-emerald-50/30' : '';
@@ -70,7 +70,7 @@
 
     <td class="text-right pr-6">
         <div class="flex items-center justify-end gap-2">
-            <form action="{{ route('admin.properties.restore', $property->id) }}" method="POST">
+            <form action="{{ route('account.properties.restore', $property->id) }}" method="POST">
                 @csrf
                 @method('PATCH')
                 <button type="button" onclick="confirmAction(this, 'restore')"

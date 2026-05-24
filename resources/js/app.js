@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import Swal from 'sweetalert2';
 import { get, set, update } from 'idb-keyval';
+import axios from 'axios';
 
 // Replace this with your actual configuration from the Firebase Console
 const firebaseConfig = {
@@ -64,7 +65,8 @@ onMessage(messaging, async (payload) => {
 
     await update('listNotifications', (list) => {
         const currentList = list || [];
-        const { typeProperty, slug, timestamp, id, title, body } = payload.data;
+        const { slug, timestamp, id, title, body } = payload.data;
+        console.log('titleDoang',    title);
 
         const isDuplicate = currentList.some(item => item.id === id);
         if (isDuplicate) return currentList; // Kembalikan list tanpa perubahan
@@ -73,7 +75,6 @@ onMessage(messaging, async (payload) => {
         currentList.unshift({
             title,
             body,
-            typeProperty,
             slug,
             timestamp,
             id,
@@ -91,8 +92,8 @@ onMessage(messaging, async (payload) => {
 
     Toast.fire({
         icon: 'info',
-        title,
-        text: body
+        title: payload.data.title,
+        text: payload.data.body
     });
 });
 
@@ -105,12 +106,33 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
+const getSecondsUntilMidnightWIB = () => {
+    const now = new Date();
+
+    // Konversi waktu saat ini ke zona waktu Jakarta (WIB)
+    const jakartaTimeStr = now.toLocaleString("en-US", {
+        timeZone: "Asia/Jakarta"
+    });
+    const jakartaTime = new Date(jakartaTimeStr);
+
+    // Buat objek waktu untuk jam 12 malam (00:00) besoknya di Jakarta
+    const midnightJakarta = new Date(jakartaTime);
+    midnightJakarta.setHours(24, 0, 0, 0); // Set ke jam 24:00:00 hari ini (alias 00:00 besok)
+
+    // Hitung selisihnya (dalam milidetik) lalu ubah ke detik
+    const diffInSeconds = Math.floor((midnightJakarta.getTime() - jakartaTime.getTime()) / 1000);
+
+    return diffInSeconds;
+}
+
 // EKSPOS KE GLOBAL agar bisa dipanggil di Blade
 window.firebaseMessaging = messaging;
 window.getFirebaseToken = getToken; 
 window.Swal = Swal;
 window.Toast = Toast; // Sekarang kamu bisa panggil Toast.fire() di mana saja
 window.formatRupiah = formatRupiah;
+window.getSecondsUntilMidnightWIB = getSecondsUntilMidnightWIB;
 window.idb_get = get;
 window.idb_set = set;
 window.idb_update = update;
+window.axios = axios;

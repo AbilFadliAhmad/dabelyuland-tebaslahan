@@ -2,8 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FCMController;
-use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\MidtransController;
+use App\Http\Controllers\Admin\SesiController;
 use App\Models\Property; 
 
 
@@ -17,6 +17,12 @@ use App\Models\Property;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Rute untuk menerima notifikasi otomatis dari Midtrans (Webhook)
+Route::post('/midtrans/webhook', [MidtransController::class, 'handleWebhook'])->name('membership.webhook');
+
+// Rute untuk mengirim OTP dengan bantuan Qstash dari Upstash
+Route::post('/internal/process-otp', [SesiController::class, 'processOtp'])->name('process-otp');
 
 // Testing Routes
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -38,10 +44,8 @@ Route::get('/cities', function (Request $request) {
     return response()->json($cities);
 })->name('search-cities');
 
-Route::post('/subscribe-topics', [FCMController::class, 'subscribeTopics'])->name('subscribe-topics');
-Route::post('/send-notification', [FCMController::class, 'sendNotification'])->name('send-notification');
-Route::post('/toggle-notification', [FCMController::class, 'toggleNotification'])->name('toggle-notification');
-Route::post('/favorite-list', [FavoriteController::class, 'getProperties'])->name('favorite-list');
+Route::post('/test-send', [App\Http\Controllers\FCMController::class, 'testSend'])->name('send-send');
+
 
 // ================= TESTING ROUTES (Aman dihapus) =================
 // Route::get('/benchmark', function () {

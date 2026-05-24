@@ -52,8 +52,9 @@
                 {{-- ==========================================
                      2. MANAJEMEN PROPERTI 
                      ========================================== --}}
-                <li class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 mt-6 px-3">Database
-                    Properti</li>
+                <li class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 mt-6 px-3">
+                    Manajemen Properti
+                </li>
                 <li>
                     <a href="{{ Auth::user()->role == 'admin' ? route('admin.buildings.index') : route('user.buildings.index') }}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
@@ -80,15 +81,16 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ Auth::user()->role == 'admin' ? route('admin.properties.trash') : route('user.properties.trash') }}"
+                    <a href="{{ route('account.properties.archive') }}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
-                        @if (Auth::user()->role == 'admin' ? Route::is('admin.properties.trash') : Route::is('user.properties.trash')) bg-rose-500 text-white shadow-[0_4px_12px_rgba(225,29,72,0.3)] @else text-gray-600 hover:bg-rose-50 hover:text-rose-500 @endif">
-                        <svg class="w-5 h-5 @if (Auth::user()->role == 'admin' ? Route::is('admin.properties.trash') : Route::is('user.properties.trash')) text-white @else text-gray-400 group-hover:text-rose-500 @endif transition-colors"
+                        @if (Route::is('account.properties.archive')) bg-purple-500 text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                        <svg class="w-5 h-5 @if (Route::is('account.properties.archive')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"
                             fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                         </svg>
-                        <span>Tempat Sampah</span>
+
+                        <span>Arsip Properti</span>
                     </a>
                 </li>
 
@@ -98,10 +100,10 @@
                 <li class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 mt-6 px-3">Manajemen
                     Website</li>
                 <li>
-                    <a href="{{ route('banner.index') }}"
+                    <a href="{{ route('account.banner.index') }}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
-                        @if (Route::is('banner.*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
-                        <svg class="w-5 h-5 @if (Route::is('banner.*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"
+                        @if (Route::is('account.banner.*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                        <svg class="w-5 h-5 @if (Route::is('account.banner.*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"
                             viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd"
                                 d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h16.5A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6ZM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0 0 21 18v-1.94l-2.69-2.689a1.5 1.5 0 0 0-2.12 0l-.88.879.97.97a.75.75 0 1 1-1.06 1.06l-5.16-5.159a1.5 1.5 0 0 0-2.12 0L3 16.061Zm10.125-7.81a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z"
@@ -111,10 +113,10 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('admin.highlight.index') }}"
+                    <a href="{{ route('account.highlight.index') }}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
-                        @if (Route::is('admin.highlight.*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
-                        <svg class="w-5 h-5 @if (Route::is('admin.highlight.*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"
+                        @if (Route::is('account.highlight.*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                        <svg class="w-5 h-5 @if (Route::is('account.highlight.*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"
                             viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd"
                                 d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z"
@@ -200,18 +202,66 @@
                             <span>Manajemen Paket Koin</span>
                         </a>
                     </li>
+                    <li class="mt-2">
+                        <a href="{{ route('admin.quest.index') ?? '#' }}"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
+                        @if (Request::is('admin/quest*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                            <i
+                                class="fas fa-tasks w-5 text-center text-lg @if (Request::is('admin/quest*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"></i>
+                            <span>Manajemen Quest</span>
+                        </a>
+                    </li>
                 @endif
                 {{-- MENU KOIN KHUSUS AGEN --}}
                 @if (Auth::check() && Auth::user()->role !== 'admin')
                     <li class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1 mt-6 px-3">Layanan
-                        Koin</li>
+                        Tambahan</li>
+                    <li>
+                        <a href="{{ route('user.membership.index') }}"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
+                            @if (Route::is('user.membership.index')) bg-indigo-600 text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                            <i
+                                class="fas fa-crown text-lg transition-colors 
+                            @if (Route::is('user.membership.index')) text-white @else text-indigo-400 group-hover:text-indigo-400 @endif">
+                            </i>
+
+                            <span>Paket Membership</span>
+                        </a>
+                    </li>
                     <li>
                         <a href="{{ route('user.topup.index') }}"
                             class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
-                                @if (Request::is('user.topup*') || Request::is('user/koin*')) bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.3)] @else text-gray-600 hover:bg-amber-50 hover:text-amber-600 @endif">
+                                @if (Request::is('user.topup.*') || Request::is('user/topup*')) bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.3)] @else text-gray-600 hover:bg-amber-50 hover:text-amber-600 @endif">
                             <i
-                                class="fas fa-coins w-5 text-center text-lg text-amber-400 group-hover:text-amber-500  transition-colors"></i>
+                                class="fas fa-coins w-5 text-center text-lg @if (Request::is('user/topup*')) text-white @else text-amber-400 group-hover:text-amber-500 @endif transition-colors"></i>
                             <span>Dabelyu Koin</span>
+                        </a>
+                    </li>
+                    {{-- MENU RIWAYAT TRANSAKSI USER --}}
+                    <li>
+                        <a href="{{ route('account.transactions.index') }}"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
+                                @if (Route::is('account.transactions.*')) bg-sky-500 text-white shadow-[0_4px_12px_rgba(14,165,233,0.3)] @else text-gray-600 hover:bg-sky-50 hover:text-sky-600 @endif">
+                            <i
+                                class="fas fa-receipt w-5 text-center text-lg @if (Route::is('account.transactions.*')) text-white @else text-sky-400 group-hover:text-sky-500 @endif transition-colors"></i>
+                            <span>Riwayat Transaksi</span>
+                        </a>
+                    </li>
+                    {{-- MENU MISI & HADIAH BARU UNTUK USER/AGEN --}}
+                    <li>
+                        <a href="{{ route('user.quest.index') ?? '#' }}"
+                            class="flex items-center justify-between px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
+                                @if (Request::is('user/quest*')) bg-indigo-500 text-white shadow-[0_4px_12px_rgba(99,102,241,0.3)] @else text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 @endif">
+                            <div class="flex items-center gap-3">
+                                <i
+                                    class="fas fa-gift w-5 text-center text-lg @if (Request::is('user/quest*')) text-white @else text-indigo-400 group-hover:text-indigo-500 @endif transition-colors"></i>
+                                <span>Misi & Hadiah</span>
+                            </div>
+                            {{-- <span class="relative flex h-2.5 w-2.5">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                            </span> --}}
                         </a>
                     </li>
                 @endif
@@ -236,7 +286,17 @@
                             <span>Laporan Analytics</span>
                         </a>
                     </li>
-                    {{-- <li>
+                    {{-- MENU TRANSAKSI ADMIN --}}
+                    <li>
+                        <a href="{{ route('account.transactions.index') }}"
+                            class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
+                                @if (Route::is('account.transactions.index')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
+                            <i
+                                class="fas fa-receipt w-5 text-center text-lg @if (Route::is('account.transactions.*')) text-white @else text-gray-400 group-hover:text-[#0d9488] @endif transition-colors"></i>
+                            <span>Riwayat Transaksi</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="{{ route('admin.audit.index') }}"
                             class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
                         @if (Route::is('admin.audit.*')) bg-[#0d9488] text-white shadow-[0_4px_12px_rgba(13,148,136,0.3)] @else text-gray-600 hover:bg-gray-50 hover:text-[#0d9488] @endif">
@@ -247,7 +307,7 @@
                             </svg>
                             <span>Audit & Log Aktivitas</span>
                         </a>
-                    </li> --}}
+                    </li>
                     <li>
                         <a href="{{ route('contacts.index') }}"
                             class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[0.95rem] font-semibold transition-all duration-200 no-underline group
@@ -289,7 +349,7 @@
 
         {{-- Card Upgrade Premium (Hanya untuk User Biasa) --}}
         @if (Auth::check() && Auth::user()->role !== 'admin')
-            <div class="px-4 mb-6 mt-8">
+            <div class="px-4">
                 <div
                     class="bg-gradient-to-br from-amber-100 to-amber-50 rounded-2xl p-4 border border-amber-200 relative overflow-hidden group hover:shadow-md transition-all">
                     <div class="absolute -right-4 -top-4 text-amber-200/50 group-hover:scale-110 transition-transform">
@@ -319,7 +379,7 @@
             </svg>
             <span>Lihat Website Utama</span>
         </a>
-        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-sidebar').submit();"
+        <a href="#" onclick="handleLogout(event)"
             class="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-xl text-sm font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200 no-underline group">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path fill-rule="evenodd"
@@ -329,8 +389,9 @@
             <span>Keluar Sistem</span>
         </a>
     </div>
-    <form id="logout-form-sidebar" action="{{ route('logout') }}" method="POST" class="hidden">
+    <form id="logout-form-sidebar" action="{{ route('account.logout') }}" method="POST" class="hidden">
         @csrf
+        <input type="hidden" name="fcm_token" id="logout_fcm_token_sidebar" value="">
     </form>
 
 </aside>
@@ -380,4 +441,52 @@
             });
         }
     })();
+
+    async function handleLogout(e) {
+        e.preventDefault(); // Cegah aksi default link/tombol
+
+        const logoutForm = document.getElementById('logout-form-sidebar');
+        const tokenInput = document.getElementById('logout_fcm_token_sidebar');
+
+        // Tampilkan loading (opsional, jika menggunakan SweetAlert2)
+        if (typeof Swal !== 'undefined') {
+            Swal.showLoading();
+        }
+
+        try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                // Bungkus proses FCM ke dalam Promise utama
+                const fetchTokenPromise = (async () => {
+                    const registration = await navigator.serviceWorker.register(
+                        '/firebase-messaging-sw.js', {
+                            scope: '/'
+                        });
+                    await navigator.serviceWorker.ready;
+                    return await getFirebaseToken(firebaseMessaging, {
+                        serviceWorkerRegistration: registration,
+                    });
+                })();
+
+                // Buat Promise khusus untuk batas waktu (timeout 5 detik)
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('FCM_TIMEOUT')), 10000)
+                );
+
+                // Balapan antara proses ambil token vs batas waktu
+                const currentToken = await Promise.race([fetchTokenPromise, timeoutPromise]);
+
+                if (currentToken) {
+                    tokenInput.value = currentToken;
+                }
+            } else {
+                console.warn('Izin notifikasi tidak diberikan. Melanjutkan login tanpa FCM token.');
+            }
+        } catch (err) {
+            console.error('Terjadi kesalahan saat mengambil token FCM:', err);
+        }
+
+        // Eksekusi pengiriman form ke Laravel
+        console.log(tokenInput.name, ": ", tokenInput.value)
+        logoutForm.submit();
+    }
 </script>

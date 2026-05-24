@@ -278,7 +278,7 @@
                                             {{-- Tombol Delete --}}
                                             <button type="button"
                                                 onclick="confirmAction(
-                                                    '{{ route('admin.highlight.destroy', ['type' => 'recommendation', 'property_id' => $item->property_id]) }}',
+                                                    '{{ route('account.highlight.destroy', ['type' => 'recommendation', 'property_id' => $item->property_id]) }}',
                                                     'Hapus {{ ucfirst('rekomendasi') }}', 
                                                     {{ json_encode($swalText) }}, 
                                                     'DELETE'
@@ -435,7 +435,7 @@
                                             {{-- Tombol Delete --}}
                                             <button type="button"
                                                 onclick="confirmAction(
-                                                    '{{ route('admin.highlight.destroy', ['type' => 'highlight', 'property_id' => $item->property_id]) }}',
+                                                    '{{ route('account.highlight.destroy', ['type' => 'highlight', 'property_id' => $item->property_id]) }}',
                                                     'Hapus {{ ucfirst('highlight') }}', 
                                                     {{ json_encode($swalText) }}, 
                                                     'DELETE'
@@ -600,7 +600,7 @@
 
             // Kasus A: Kuota masih ada -> Langsung Gass ke Page Create
             if (currentQuota > 0) {
-                window.location.href = "{{ route('admin.highlight.create') }}";
+                window.location.href = "{{ route('account.highlight.create') }}";
             }
             // Kasus B: Kuota Habis, tapi Koin Cukup -> Munculkan Konfirmasi Penggunaan Koin
             else if (userWallet.koin >= price) {
@@ -619,7 +619,7 @@
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = "{{ route('admin.highlight.create') }}";
+                        window.location.href = "{{ route('account.highlight.create') }}";
                     }
                 });
             }
@@ -712,7 +712,7 @@
                     });
 
                     // 3. Tembak API Asli
-                    fetch("{{ route('admin.highlight.sundul') }}", {
+                    fetch("{{ route('account.highlight.sundul') }}", {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

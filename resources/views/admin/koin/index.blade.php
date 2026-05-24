@@ -517,7 +517,7 @@
         // ==========================================
         function switchTab(tabName) {
             // Menyimpan tab yang terakhir dibuka ke session storage
-            sessionStorage.setItem('activeKoinTab', tabName);
+            localStorage.setItem('activeKoinTab', tabName);
 
             // Hide all sections
             document.getElementById('section-paket').classList.add('hidden');
@@ -550,10 +550,8 @@
 
         // Memulihkan tab yang terbuka setelah refresh halaman (misal setelah submit form)
         document.addEventListener("DOMContentLoaded", function() {
-            let activeTab = sessionStorage.getItem('activeKoinTab');
-            if (activeTab) {
-                switchTab(activeTab);
-            }
+            let activeTab = localStorage?.getItem('activeKoinTab') ?? 'paket';
+            switchTab(activeTab);
         });
 
         // ==========================================

@@ -22,47 +22,59 @@ const messaging = firebase.messaging();
 
 // 4. Menangani pesan saat aplikasi sedang tertutup (Background)
 messaging.onBackgroundMessage(async(payload) => {
+  // Ambil fallback dari payload.notification jika payload.data ternyata kosong
+  const title = payload.data?.title || payload.notification?.title || "Notifikasi Sistem";
+  const body = payload.data?.body || payload.notification?.body || "Ada pembaruan terbaru.";
+  const slug = payload.data?.slug || "";
+  const id = payload.data?.id || new Date().getTime().toString();
+  
+  // PERBAIKAN: Konversi string "false" / "true" dari API V1 menjadi Boolean murni secara aman
+  const isFrontside = payload.data?.frontside === 'true' || payload.data?.frontside === true || payload.data?.frontside === undefined;
   try {
     // Check apakah notifikasi aktif
     const isNotificationActive = await idbKeyval.get('notificationStatus');
-    if (!isNotificationActive) return;
+    if (!isNotificationActive && isFrontside) return;
 
-    const { typeProperty, slug, timestamp, id, title, body } = payload.data;
     let isUpdate = false;
     const notificationTitle = title;
     const notificationOptions = {
       body: body,
-      icon: 'frontside/img/icon/dabelyuland.png' // Pastikan file icon ini ada di folder public
+      icon: '/frontside/img/icon/dabelyuland.png', // Pastikan file icon ini ada di folder public
+      data: {
+        url: slug,
+      }
     };
     
-    await idbKeyval.update('listNotifications', (list) => {
-        const currentList = list || [];
-        
-        const isDuplicate = currentList.some(item => item.id === id);
-        if (isDuplicate) return currentList; // Kembalikan list tanpa perubahan
+    if (isFrontside) {
+      await idbKeyval.update('listNotifications', (list) => {
+          const currentList = list || [];
+          
+          const isDuplicate = currentList.some(item => item.id === id);
+          if (isDuplicate) return currentList; // Kembalikan list tanpa perubahan
 
-        isUpdate = true;
-        
-        currentList.unshift({
-            title,
-            body,
-            typeProperty,
-            slug,
-            timestamp,
-            id,
-            isRead: false
-        });
-        return currentList;
-    });
+          isUpdate = true;
+          
+          currentList.unshift({
+              title,
+              body,
+              slug,
+              timestamp: new Date().toLocaleString(),
+              id,
+              isRead: false
+          });
+          return currentList;
+      });
 
-    if(isUpdate) {
-        await idbKeyval.update('lengthNotifications', (len)=>{
-            const currentLen = parseInt(len) || 0;
-            return currentLen + 1;
-        })
+      if(isUpdate) {
+          await idbKeyval.update('lengthNotifications', (len)=>{
+              const currentLen = parseInt(len) || 0;
+              return currentLen + 1;
+          })
+      }
     }
+    console.log('[SW] Menampilkan notifikasi:', notificationTitle);
     return self.registration.showNotification(notificationTitle, notificationOptions);
   } catch (error) {
     console.error('[SW] Error mengambil status dari IndexedDB:', error);
-  }
+    return self.registration.showNotification(title, { body: body, icon: '/frontside/img/icon/dabelyuland.png' });  }
 });

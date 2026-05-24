@@ -35,6 +35,7 @@ class TestimoniController extends Controller
             'nama' => 'required|string|max:255',
             'pekerjaan' => 'required|string|max:255',
             'testimoni' => 'required|string',
+            'rating' => 'required|numeric|between:1.0,5.0', // Batasan minimal 1.0 dan maksimal 5.0
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Maksimal 2MB
         ]);
 

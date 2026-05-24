@@ -15,14 +15,21 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\PortofoliodepanController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\MembershipController;
-use App\Http\Controllers\TrashController;
+use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\UserMembershipController;
 use App\Http\Controllers\HighlightController;
-use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CoinPackageController;
 use App\Http\Controllers\ServicePriceController;
 use App\Http\Controllers\TopupController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\FCMController;
+use App\Http\Controllers\QuestController;
+use App\Http\Controllers\UserQuestController;
+use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 // ================= FRONTEND ROUTES =================
@@ -42,6 +49,19 @@ Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifik
 // News
 Route::get('/news/{slug}', [NewsController::class, 'index'])->name('news.show');
 
+// Analytics Tracking
+Route::post('/track-view-website', [AnalyticsController::class, 'trackViewWebsite'])->name('track-view-website');
+Route::post('/track-view-property', [AnalyticsController::class, 'trackViewProperty'])->name('track-view-property');
+Route::post('/track-click-whatsapp', [AnalyticsController::class, 'trackClickWhatsapp'])->name('track-click-whatsapp');
+
+// Manajemen Quest Share & Unique View
+Route::post('/quest/unique-view', [UserQuestController::class, 'uniqueViewProperty'])->name('quest.unique-view');
+Route::post('/quest/share-property', [UserQuestController::class, 'shareProperty'])->name('quest.share-property');
+
+
+// Fitur Favorite
+Route::post('/favorite-list', [FavoriteController::class, 'getProperties'])->name('favorite-list');
+
 // ================= GUEST ONLY ROUTES (Belum Login) =================
 Route::middleware(['guest'])->group(function () {
     // Menampilkan halaman / HTML
@@ -51,9 +71,23 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/login', [SesiController::class, 'login']);
     Route::post('/register', [SesiController::class, 'register'])->name('register');
 
-    // OTP
+    // Pengiriman OTP (Pendaftaran & Resend Lupa Sandi)
     Route::post('/send-otp', [SesiController::class, 'sendOtp'])->name('send-otp');
-    Route::post('/verify-otp', [SesiController::class, 'verifyOtp'])->name('verify-otp');
+
+    //  Lupa Sandi
+    Route::post('/forgot-password-req', [SesiController::class, 'forgotPasswordReq'])->name('forgot-password-req');
+    Route::post('/verify-forgot-otp', [SesiController::class, 'verifyForgotOtp'])->name('verify-forgot-otp');
+    Route::post('/reset-password', [SesiController::class, 'resetPassword'])->name('reset-password');
+
+    // Fitur FCM
+    Route::post('/subscribe-topic', [FCMController::class, 'subscribeTopic'])->name('subscribe-topic');
+    Route::post('/unsubscribe-topic', [FCMController::class, 'unsubscribeTopic'])->name('unsubscribe-topic');
+    // Route::post('/send-notification', [FCMController::class, 'sendNotification'])->name('send-notification');
+
+    // Fitur Notifikasi FCM
+    Route::post('/subscribe-notification-topics', [FCMController::class, 'subscribeNotificationTopics'])->name('subscribe-notification-topics');
+    Route::post('/send-notification-new-property', [FCMController::class, 'sendNotificationNewProperty'])->name('send-notification-new-property');
+    Route::post('/toggle-notification', [FCMController::class, 'toggleNotification'])->name('toggle-notification');
 });
 
 // ================= AUTHENTICATED ROUTES =================
@@ -62,16 +96,58 @@ Route::middleware(['auth'])->prefix('account')->name('account.')->group(function
     Route::get('/search', [LocationController::class, 'searchAddress'])->name('location.search');
     // Mencari alamat berdasarkan koordinat (Reverse Geocode)
     Route::get('/reverse-geocode', [LocationController::class, 'reverseGeocode'])->name('location.reverse_geocode');
+
+    // Logout
+    Route::post('/logout', [SesiController::class, 'logout'])->name('logout');
+
+    // Archive/Trash
+    Route::get('/properties/archive', [ArchiveController::class, 'index'])->name('properties.archive');
+    Route::patch('/properties/{id}/restore', [ArchiveController::class, 'restore'])->name('properties.restore');
+
+    // Highlight
+    Route::get('/highlight', [HighlightController::class, 'index'])->name('highlight.index');
+    Route::get('/highlight/create', [HighlightController::class, 'create'])->name('highlight.create');
+    Route::post('/highlight/store', [HighlightController::class, 'store'])->name('highlight.store');
+    Route::post('/highlight/sundul', [HighlightController::class, 'sundul'])->name('highlight.sundul');
+    Route::delete('/highlight/destroy/{type}/{property_id}', [HighlightController::class, 'destroy'])->name('highlight.destroy');
+    Route::get('/highlight/search-properties', [HighlightController::class, 'searchProperties'])->name('highlight.search.properties');
+
+    // Banner
+    Route::resource('banner', BannerController::class);
+    Route::patch('/banner/${bannerId}/toggle-status', [BannerController::class, 'toggleStatus'])->name('banner.toggle-status');
+    Route::post('/banner/generate-ai', [BannerController::class, 'generateAi'])->name('banner.generateAi');
+    Route::post('/banner/generate-ai-kombinasi', [BannerController::class, 'generateAiKombinasi'])->name('banner.generateAiKombinasi');
+
+    // Notifikasi
+    Route::get('notification/check', [NotificationController::class, 'checkNotifications'])->name('notification.check');
+    Route::get('notification/list', [NotificationController::class, 'listNotifications'])->name('notification.list');
+    Route::delete('notification/destroy', [NotificationController::class, 'destroyNotification'])->name('notification.destroy');
+
+    // Transaksi
+    Route::get('/transaction', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::post('/transaction/refund/{id}', [TransactionController::class, 'refund'])->name('transaction.refund');
+
 });
 
 // ================= USER/AGENT ROUTES =================
 Route::middleware(['auth'])->group(function () {
     Route::get('/user', [UserController::class, 'index'])->name('user.index');
 
+    // Quest Manajemen
+    Route::get('/user/quest', [UserQuestController::class, 'index'])->name('user.quest.index');
+    Route::post('/user/quests/{id}/claim', [UserQuestController::class, 'claim'])->name('user.quest.claim');
+    Route::post('/user/quests/init', [UserQuestController::class, 'initQuest'])->name('user.quest.init');
+
     // Top Up Koin 
-    Route::get('/topup', [TopupController::class, 'index'])->name('user.topup.index');
-    Route::post('/topup/initiate', [TopupController::class, 'initiatePayment'])->name('user.topup.initiate');
-    Route::get('/topup/status/{orderId}', [TopupController::class, 'checkStatus'])->name('user.topup.status');
+    Route::get('/user/topup', [TopupController::class, 'index'])->name('user.topup.index');
+    Route::post('/user/topup/initiate', [TopupController::class, 'initiatePayment'])->name('user.topup.initiate');
+    Route::get('/user/topup/status/{orderId}', [TopupController::class, 'checkStatus'])->name('user.topup.status');
+
+    // Membership
+    Route::get('/user/membership', [UserMembershipController::class, 'index'])->name('user.membership.index');
+    Route::post('/user/membership/initiate', [UserMembershipController::class, 'initiatePayment'])->name('user.membership.initiate');
+    Route::get('/user/membership/status/{orderId}', [UserMembershipController::class, 'checkStatus'])->name('user.membership.status');
+    Route::post('/user/membership/cancel', [UserMembershipController::class, 'cancelPayment'])->name('user.membership.cancel');
 
     // CRUD Property
     Route::prefix('/user/property')->group(function () {
@@ -98,31 +174,23 @@ Route::middleware(['auth'])->group(function () {
 
         // Mengaktifkan atau menonaktifkan properti
         Route::patch('/{property}/toggle-visibility', [PropertyController::class, 'toggleVisibility'])->name('user.property.toggle-visibility');
-
-        // Highlight
-        Route::get('/highlight/search-properties', [HighlightController::class, 'searchProperties'])->name('user.highlight.search.properties');
-
     });
-
-    // Logout
-    Route::post('/logout', [SesiController::class, 'logout'])->name('logout');
-
-    // Membership
-    Route::get('/user/membership', [UserMembershipController::class, 'index'])->name('user.membership.index');
-
-    // History / Trash
-    Route::get('/properties/trash', [TrashController::class, 'index'])->name('user.properties.trash');
-    Route::patch('/properties/{id}/restore', [TrashController::class, 'restore'])->name('user.properties.restore');
 });
 
 // ================= ADMIN ROUTES (Hanya Role Admin) =================
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    // Highlight
+    Route::get('/highlight/search-agents', [HighlightController::class, 'searchAgents'])->name('admin.highlight.search.agents');
+
+    // Quest Manajemen
+    Route::get('/quest', [QuestController::class, 'index'])->name('admin.quest.index');
+    Route::patch('/quest/{id}', [QuestController::class, 'update'])->name('admin.quest.update');
+
     // Dashboard Admin + notifikasi
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('/report', fn() => view('admin.report'))->name('report');
 
     // User Management
-    Route::get('/list-user', [SesiController::class, 'list'])->name('user');
+    // Route::get('/list-user', [SesiController::class, 'list'])->name('user');
     Route::post('/register/delete/{id}', [SesiController::class, 'deleteUser'])->name('deleteuser');
     Route::get('/list-users', [UserController::class, 'list'])->name('admin.list.users');
 
@@ -130,7 +198,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::patch('/update/wallet', [UserController::class, 'updateWallet'])->name('admin.update.wallet');
 
     // Audit 
-    Route::get('/audit-log', [AuditController::class, 'index'])->name('admin.audit.index');
+    Route::get('/audit-log', [AuditLogController::class, 'index'])->name('admin.audit.index');
 
     // Admin Register
     Route::get('/register', [SesiController::class, 'createAdmin'])->name('admin.register');
@@ -139,14 +207,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/{id}/update', [SesiController::class, 'updateAdmin'])->name('admin.update');
     Route::post('/{id}/delete', [SesiController::class, 'deleteAdmin'])->name('admin.delete');
 
-    // Highlight
-    Route::get('/highlight', [HighlightController::class, 'index'])->name('admin.highlight.index');
-    Route::get('/highlight/create', fn() => view('admin.highlight.form'))->name('admin.highlight.create');
-    Route::post('/highlight/store', [HighlightController::class, 'store'])->name('admin.highlight.store');
-    Route::post('/highlight/sundul', [HighlightController::class, 'sundul'])->name('admin.highlight.sundul');
-    Route::delete('/highlight/destroy/{type}/{property_id}', [HighlightController::class, 'destroy'])->name('admin.highlight.destroy');
-    Route::get('/highlight/search-agents', [HighlightController::class, 'searchAgents'])->name('admin.highlight.search.agents');
-
     // Membership
     Route::get('/membership', [MembershipController::class, 'index'])->name('admin.membership.index');
     Route::post('/membership/{id}', [MembershipController::class, 'update'])->name('admin.membership.update');
@@ -154,10 +214,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // --- FITUR MEMBERSHIP ---
     // 1. Halaman Daftar/Manajemen Pelanggan (Memanggil fungsi 'userList')
     Route::get('/membership/user-list', [MembershipController::class, 'userList'])->name('admin.membership.user-list');
-
-    // History / Trash
-    Route::get('/properties/trash', [TrashController::class, 'index'])->name('admin.properties.trash');
-    Route::patch('/properties/{id}/restore', [TrashController::class, 'restore'])->name('admin.properties.restore');
 
     // CRUD Property
     Route::prefix('/property')->group(function () {
@@ -186,17 +242,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
         // Verifikasi Properti
         Route::patch('/{property}/verify-property', [PropertyController::class, 'verifyProperty'])->name('admin.property.verify-property');
-    });
 
-    // Nanti perlu perbaikan
-    Route::patch('/banner/${bannerId}/toggle-status', [BannerController::class, 'toggleStatus'])->name('admin.banner.toggle-status');
+        // Verifikasi Banner
+        Route::post('banner/verify-banner', [BannerController::class, 'verifyBanner'])->name('admin.banner.verify-banner');
+    });
 
     // CRUD Contact
     Route::resource('contacts', ContactController::class);
     // Route::post('portofolios', PortofolioController::class, 'update')->name('portofolios.update');
     Route::resource('portofolios', PortofolioController::class);
     Route::resource('testimonis', TestimoniController::class);
-    Route::resource('banner', BannerController::class);
     
 
     // ================= MANAJEMEN PAKET KOIN =================
@@ -209,4 +264,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/service-price/store', [ServicePriceController::class, 'store'])->name('admin.service.price.store');
     Route::patch('/service-price/{id}/update', [ServicePriceController::class, 'update'])->name('admin.service.price.update');
     Route::delete('/service-price/{id}/destroy', [ServicePriceController::class, 'destroy'])->name('admin.service.price.destroy');
+
+    // ================= MANAJEMEN HARGA LAYANAN =================
+    Route::get('/report', [App\Http\Controllers\ReportController::class, 'index'])->name('report');
 });

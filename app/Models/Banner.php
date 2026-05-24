@@ -10,7 +10,10 @@ class Banner extends Model
     use HasFactory;
       protected $fillable = [
         'image',
-        'is_active', // active/inactive
         'user_id', // active/inactive
+        'status',
+        'expired_at',
+        'amount_dabelyu_koin',
+        'amount_token',
     ];
 }

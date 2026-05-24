@@ -192,7 +192,7 @@
                     {{-- ========================================== --}}
                     {{-- STEP 1: DATA DASAR PROPERTI                --}}
                     {{-- ========================================== --}}
-                    <div class="wizard-step" id="step-1">
+                <div class="wizard-step active" id="step-1">
                         <div class="mb-6 pb-4 border-b border-gray-100">
                             <h5 class="text-lg font-bold text-gray-800 m-0">Informasi Utama</h5>
                             <p class="text-xs text-gray-500 m-0 mt-1">Masukkan judul yang menarik dan harga penawaran yang
@@ -201,12 +201,21 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Judul Iklan <span
-                                        class="text-red-500">*</span></label>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    Judul Iklan
+                                    <span class="text-red-500">*</span>
+                                </label>
+
                                 <input type="text" name="judul" id="input-judul"
-                                    value="{{ old('judul', $property->judul ?? '') }}"
-                                    class="form-input-step w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all focus:ring-2 focus:ring-teal-500"
+                                    value="{{ old('judul', $property->judul ?? '') }}" {{-- Logika disabled jika isUpdate bernilai true --}}
+                                    @if ($isEdit) disabled @endif
+                                    class="form-input-step w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all focus:ring-2 focus:ring-teal-500 
+                                    @if ($isEdit) cursor-not-allowed opacity-70 @endif"
                                     placeholder="Contoh: Rumah Minimalis Strategis Siap Huni" required>
+                                <span class="text-[11px] text-amber-600 font-medium ml-2 block sm:inline">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Pastikan judul sudah sesuai, karena tidak dapat diubah setelah iklan dipublikasikan.
+                                </span>
                             </div>
 
                             <div>
@@ -274,7 +283,7 @@
                     {{-- ========================================== --}}
                     {{-- STEP 2: SPESIFIKASI & LOKASI               --}}
                     {{-- ========================================== --}}
-                    <div class="wizard-step active" id="step-2">
+                    <div class="wizard-step" id="step-2">
                         <div class="mb-6 pb-4 border-b border-gray-100">
                             <h5 class="text-lg font-bold text-gray-800 m-0">Spesifikasi Detail & Lokasi</h5>
                             <p class="text-xs text-gray-500 m-0 mt-1">Lengkapi informasi ukuran, ruangan, dan titik lokasi

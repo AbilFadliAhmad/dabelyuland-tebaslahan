@@ -88,7 +88,7 @@
 
         {{-- HEADER --}}
         <div class="mb-8 max-w-5xl mx-auto">
-            <a href="{{ route('banner.index') }}"
+            <a href="{{ route('account.banner.index') }}"
                 class="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-[#0d9488] transition-colors no-underline mb-4">
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -104,24 +104,27 @@
 
         <div class="max-w-5xl mx-auto">
 
-            {{-- METODE SELECTION (TABS) --}}
-            <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-2 mb-6">
-                <button type="button" onclick="switchMethod('manual')" id="tab-manual"
-                    class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-active">
-                    <i class="fas fa-upload"></i> Upload Manual
-                </button>
-                <button type="button" onclick="switchMethod('ai-ref')" id="tab-ai-ref"
-                    class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-inactive">
-                    <i class="fas fa-magic"></i> AI: Kombinasi Referensi
-                </button>
-                <button type="button" onclick="switchMethod('ai-prompt')" id="tab-ai-prompt"
-                    class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-inactive">
-                    <i class="fas fa-keyboard"></i> AI: Teks Prompt Murni
-                </button>
-            </div>
+            @if (!$isEdit)
+                {{-- METODE SELECTION (TABS) --}}
+                <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-2 mb-6">
+                    <button type="button" onclick="switchMethod('manual')" id="tab-manual"
+                        class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-active">
+                        <i class="fas fa-upload"></i> Upload Manual
+                    </button>
+                    <button type="button" onclick="switchMethod('ai-ref')" id="tab-ai-ref"
+                        class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-inactive">
+                        <i class="fas fa-magic"></i> AI: Kombinasi Referensi
+                    </button>
+                    <button type="button" onclick="switchMethod('ai-prompt')" id="tab-ai-prompt"
+                        class="flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all tab-inactive">
+                        <i class="fas fa-keyboard"></i> AI: Teks Prompt Murni
+                    </button>
+                </div>
+            @endif
+
 
             <form
-                action="{{ route(isset($isEdit) && $isEdit ? 'banner.update' : 'banner.store', isset($isEdit) && $isEdit ? $banner->id : null) }}"
+                action="{{ route(isset($isEdit) && $isEdit ? 'account.banner.update' : 'account.banner.store', isset($isEdit) && $isEdit ? $banner->id : null) }}"
                 method="POST" enctype="multipart/form-data" id="bannerForm">
                 @csrf
                 @if (isset($isEdit) && $isEdit)
@@ -194,7 +197,8 @@
                                 <br>• Jika 1 gambar: AI akan menjadikannya sebagai inspirasi gaya.
                                 <br>• Jika 2-3 gambar: AI akan menggabungkan elemen visual dari semua gambar tersebut
                                 menjadi 1 banner baru.
-                                <br>• <span class="font-bold">Baru:</span> Isi teks di bawah ini agar AI bisa menuliskannya
+                                <br>• <span class="font-bold">Baru:</span> Isi teks di bawah ini agar AI bisa
+                                menuliskannya
                                 di dalam banner.
                             </div>
                         </div>
@@ -248,7 +252,7 @@
                             </div>
                         </div>
 
-                        {{-- AREA INPUT TEKS DALAM BANNER (PENTING!) --}}
+                        {{-- AREA INPUT TEKS DALAM BANNER --}}
                         <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6">
                             <h6
                                 class="text-sm font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
@@ -263,7 +267,6 @@
                                         placeholder="Contoh: Diskon Akhir Tahun 50%!"
                                         class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
                                 </div>
-
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1.5">Subjudul / Slogan
                                         (Sedang)</label>
@@ -271,7 +274,6 @@
                                         placeholder="Contoh: Hanya Berlaku Bulan Ini"
                                         class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
                                 </div>
-
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 mb-1.5">Tombol / Call to Action
                                         (Jika ada)</label>
@@ -279,7 +281,6 @@
                                         placeholder="Contoh: Hubungi Kami Sekarang"
                                         class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
                                 </div>
-
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-bold text-gray-700 mb-1.5">Detail Teks / Deskripsi
                                         (Kecil)</label>
@@ -300,41 +301,141 @@
                      MODE 3: AI (PROMPT TEKS MURNI)
                      ========================================================== --}}
                     <div id="section-ai-prompt" class="fade-switch fade-hide w-full">
+
+                        {{-- Info Box --}}
+                        <div class="mb-6 p-4 bg-teal-50 border border-teal-100 rounded-xl flex items-start gap-3">
+                            <i class="fas fa-lightbulb text-[#0d9488] mt-0.5 text-lg"></i>
+                            <div class="text-sm text-teal-900 leading-relaxed">
+                                <span class="font-bold">AI Property Banner Generator:</span> Jawab pertanyaan di bawah
+                                ini
+                                selengkap mungkin. Anda juga dapat mengunggah foto asli properti Anda, dan AI akan
+                                otomatis
+                                menghapus *background* jelek, memoles foto, dan menyajikannya ke dalam desain banner
+                                yang
+                                profesional.
+                            </div>
+                        </div>
+
+                        {{-- Upload Foto Asli Properti --}}
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-800 mb-2">Foto Asli Properti (Rumah /
+                                Tanah)</label>
+                            <p class="text-xs text-gray-500 mb-3">Upload foto terbaik dari properti yang ingin
+                                diiklankan.
+                                AI akan menggunakan foto ini sebagai objek utama.</p>
+
+                            <input type="file" id="ai_prompt_image" name="ai_prompt_image" accept="image/*"
+                                class="hidden" onchange="previewRef(this, 'preview-prompt-img')">
+
+                            <label for="ai_prompt_image"
+                                class="ref-slot w-full md:w-1/2 aspect-[16/9] bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer hover:bg-teal-50 hover:border-teal-400 transition-all">
+                                <img id="preview-prompt-img" src=""
+                                    class="absolute inset-0 w-full h-full object-cover hidden" alt="Preview Properti">
+                                <div
+                                    class="flex flex-col items-center text-gray-400 group-hover:text-[#0d9488] z-0 p-4 text-center">
+                                    <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                                    <span class="text-sm font-bold text-gray-600 group-hover:text-teal-700">Pilih Foto
+                                        Properti</span>
+                                    <span class="text-[10px] mt-1">Format: JPG, PNG (Max 2MB)</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <hr class="border-gray-100 mb-6">
+
+                        {{-- Grid Pertanyaan Detail Spesifik --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+
+                            {{-- Tipe Properti --}}
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Warna Utama</label>
-                                <input type="text" id="ai_color_primary" placeholder="Contoh: Biru Laut, Putih, Emas"
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Tipe Properti</label>
+                                <select id="ai_prop_type"
                                     class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Warna Aksen / Sekunder</label>
-                                <input type="text" id="ai_color_secondary"
-                                    placeholder="Contoh: Kuning Neon, Hijau Daun"
-                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Gaya Desain / Vibe</label>
-                                <select id="ai_style"
-                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
-                                    <option value="modern_minimalist">Modern Minimalist</option>
-                                    <option value="luxury_elegant">Luxury & Elegan</option>
-                                    <option value="corporate_professional">Korporat Profesional</option>
-                                    <option value="warm_family">Warm & Family Friendly</option>
-                                    <option value="futuristic">Futuristik / Cyber</option>
+                                    <option value="" disabled selected>-- Pilih Tipe --</option>
+                                    <option value="Rumah Subsidi">Rumah Subsidi</option>
+                                    <option value="Rumah Komersil">Rumah Komersil / Cluster</option>
+                                    <option value="Tanah Kavling">Tanah Kavling</option>
+                                    <option value="Ruko / Ruang Usaha">Ruko / Ruang Usaha</option>
+                                    <option value="Apartemen">Apartemen</option>
+                                    <option value="Gudang / Pabrik">Gudang / Pabrik</option>
                                 </select>
                             </div>
+
+                            {{-- Target Audiens --}}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Target Audiens /
+                                    Pasar</label>
+                                <select id="ai_prop_audience"
+                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
+                                    <option value="" disabled selected>-- Pilih Target Market --</option>
+                                    <option value="Keluarga Muda / Milenial">Keluarga Muda / Milenial (Desain Dinamis)
+                                    </option>
+                                    <option value="Investor / Pengusaha">Investor / Pengusaha (Desain Formal & ROI
+                                        Fokus)
+                                    </option>
+                                    <option value="Eksklusif / High-End">Kelas Atas / High-End (Desain Mewah & Elegan)
+                                    </option>
+                                    <option value="Masyarakat Umum">Masyarakat Umum (Desain Ramai & Promo Fokus)
+                                    </option>
+                                </select>
+                            </div>
+
+                            {{-- Judul Banner Utama --}}
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Detail / Deskripsi
-                                    Banner</label>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Judul Utama / Teks Promosi
+                                    (Headline)</label>
+                                <input type="text" id="ai_prop_headline"
+                                    placeholder="Contoh: Beli Rumah Tanpa DP! / Tanah Kavling Strategis Malang"
+                                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all shadow-sm">
+                            </div>
+
+                            {{-- Keunggulan Utama (Selling Points) --}}
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Keunggulan Utama (Selling
+                                    Points)</label>
+                                <input type="text" id="ai_prop_selling_points"
+                                    placeholder="Contoh: Bebas Banjir, Cicilan 2 Jutaan, Dekat Pintu Tol, Gratis Biaya KPR"
+                                    class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all shadow-sm">
+                                <p class="text-[10px] text-gray-400 mt-1">Pisahkan dengan koma. AI akan mengubahnya
+                                    menjadi
+                                    elemen list atau badge menarik di dalam banner.</p>
+                            </div>
+
+                            {{-- Warna Utama --}}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Warna Dominan /
+                                    Tema</label>
+                                <input type="text" id="ai_color_primary"
+                                    placeholder="Contoh: Hijau Zamrud, Biru Navy, Emas"
+                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
+                            </div>
+
+                            {{-- Gaya Desain --}}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Gaya Desain Visual</label>
+                                <select id="ai_style"
+                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all">
+                                    <option value="modern_minimalist">Modern Minimalis (Bersih & Rapi)</option>
+                                    <option value="luxury_elegant">Luxury & Elegan (Mewah)</option>
+                                    <option value="corporate_professional">Korporat Profesional (Terpercaya)</option>
+                                    <option value="warm_family">Warm & Family Friendly (Nyaman)</option>
+                                    <option value="hard_selling">Hard Selling (Warna mencolok, teks besar)</option>
+                                </select>
+                            </div>
+
+                            {{-- Instruksi Visual Tambahan --}}
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-700 mb-1.5">Instruksi Khusus untuk AI
+                                    (Opsional)</label>
                                 <textarea id="ai_prompt" rows="3"
-                                    placeholder="Contoh: Banner perumahan dengan latar belakang pegunungan, ada tulisan 'Diskon 50%' di tengah dengan huruf tebal..."
+                                    placeholder="Contoh: Tolong buat backgroundnya menjadi pemandangan kota di malam hari, dan tambahkan efek cahaya matahari (lens flare) di sudut kiri atas rumah..."
                                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0d9488] transition-all"></textarea>
                             </div>
                         </div>
 
                         <button type="button" onclick="generateAIBanner('prompt')"
-                            class="w-full py-3 bg-gradient-to-r from-[#0d9488] to-teal-500 hover:from-teal-600 hover:to-teal-400 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-magic"></i> Generate Banner (Dari Teks)
+                            class="w-full py-3.5 bg-gradient-to-r from-[#0d9488] to-teal-500 hover:from-teal-600 hover:to-teal-400 text-white font-bold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+                            <i class="fas fa-magic text-xl"></i> Mulai Generate Banner AI
                         </button>
                     </div>
 
@@ -351,7 +452,8 @@
                                 <div
                                     class="w-12 h-12 border-4 border-teal-100 border-t-[#0d9488] rounded-full animate-spin mb-3">
                                 </div>
-                                <p class="text-sm font-bold text-gray-700 animate-pulse">AI sedang melukis banner Anda...
+                                <p class="text-sm font-bold text-gray-700 animate-pulse">AI sedang melukis banner
+                                    Anda...
                                 </p>
                                 <p class="text-xs text-gray-400 mt-1">Harap tunggu beberapa detik.</p>
                             </div>
@@ -361,31 +463,95 @@
                 </div>
 
                 {{-- ==========================================================
-                 PENGATURAN STATUS & TOMBOL SIMPAN
+                 PENGATURAN STATUS, DURASI KOIN & TOMBOL SIMPAN
                  ========================================================== --}}
                 <div
-                    class="bg-white rounded-3xl shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-gray-100 p-6 md:p-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="w-full sm:w-1/2">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Status Penayangan <span
-                                class="text-red-500">*</span></label>
-                        <select id="status" name="status"
-                            class="w-full max-w-xs px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:border-[#0d9488] transition-all">
-                            <option value="1"
-                                {{ old('status', isset($isEdit) && $isEdit ? $banner->status : 1) == 1 ? 'selected' : '' }}>
-                                🟢 Aktif (Tampilkan)</option>
-                            <option value="0"
-                                {{ old('status', isset($isEdit) && $isEdit ? $banner->status : 1) == 0 ? 'selected' : '' }}>
-                                🔴 Tidak Aktif (Sembunyikan)</option>
-                        </select>
-                    </div>
+                    class="bg-white rounded-3xl shadow-[0_4px_25px_rgba(0,0,0,0.03)] border border-gray-100 p-6 md:p-8 flex flex-col gap-6">
 
-                    <div class="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-                        <a href="{{ route('banner.index') }}"
-                            class="flex-1 sm:flex-none justify-center inline-flex items-center px-6 py-3 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold rounded-xl transition-all shadow-sm no-underline">
+                    @if (!$isEdit)
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {{-- Dropdown Status --}}
+                            <div class="w-full opacity-0 pointer-events-none">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Status Penayangan <span
+                                        class="text-red-500">*</span></label>
+                                <select id="status" name="status"
+                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:border-[#0d9488] transition-all">
+                                    <option value="1"
+                                        {{ old('status', isset($isEdit) && $isEdit ? $banner->status : 1) == 1 ? 'selected' : '' }}>
+                                        🟢 Aktif (Tampilkan)</option>
+                                    <option value="0"
+                                        {{ old('status', isset($isEdit) && $isEdit ? $banner->status : 1) == 0 ? 'selected' : '' }}>
+                                        🔴 Tidak Aktif (Sembunyikan)</option>
+                                </select>
+                            </div>
+
+                            {{-- Dropdown Durasi & Koin --}}
+                            <div class="w-full">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Durasi Tayang & Tarif <span
+                                        class="text-red-500">*</span></label>
+
+                                @php
+                                    // Cek apakah variabel tokenBanner di-passing dari Controller dan jumlahnya > 0
+                                    $hasToken = isset($tokenBanner) && $tokenBanner > 0;
+                                @endphp
+
+                                <select id="service_price_id" name="service_price_id" required
+                                    class="w-full px-4 py-2.5 rounded-xl text-sm font-bold focus:outline-none transition-all 
+                                {{ $hasToken ? 'bg-green-50 border border-green-200 text-green-900 focus:border-green-400' : 'bg-amber-50 border border-amber-200 text-amber-900 focus:border-amber-400' }}">
+
+                                    <option value="" disabled selected>-- Pilih Durasi --</option>
+
+                                    {{-- Looping data tarif dari Controller --}}
+                                    @if (isset($servicePrices) && count($servicePrices) > 0)
+                                        @foreach ($servicePrices as $price)
+                                            <option value="{{ $price->id }}"
+                                                {{ old('service_price_id', isset($banner) ? $banner->service_price_id : '') == $price->id ? 'selected' : '' }}>
+
+                                                {{ $price->nama_durasi }}
+
+                                                {{-- Ubah label harga di dalam dropdown --}}
+                                                @if ($hasToken)
+                                                    (Gratis - Potong 1 Token)
+                                                @else
+                                                    ({{ number_format($price->biaya_koin, 0, ',', '.') }} Koin)
+                                                @endif
+
+                                            </option>
+                                        @endforeach
+                                    @else
+                                        <option value="" disabled>Data tarif belum diatur</option>
+                                    @endif
+                                </select>
+
+                                {{-- Helper text berubah sesuai status token --}}
+                                @if ($hasToken)
+                                    <p class="text-[11px] text-green-600 font-semibold mt-1.5">
+                                        <i class="fas fa-ticket-alt text-green-500 mr-1"></i> Anda memiliki
+                                        {{ $tokenBanner }} Token. 1 Token Banner akan digunakan secara otomatis.
+                                    </p>
+                                @else
+                                    <p class="text-[11px] text-gray-500 mt-1.5">
+                                        <i class="fas fa-coins text-amber-500 mr-1"></i> Koin akan dipotong saat banner
+                                        diterbitkan.
+                                    </p>
+                                @endif
+
+                                @error('service_price_id')
+                                    <p class="text-red-500 text-xs font-semibold mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    @endif
+
+
+                    {{-- Tombol Aksi --}}
+                    <div class="flex justify-end gap-3 w-full mt-2 pt-6 border-t border-gray-100">
+                        <a href="{{ route('account.banner.index') }}"
+                            class="inline-flex items-center px-6 py-3 bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold rounded-xl transition-all shadow-sm no-underline">
                             Batal
                         </a>
                         <button type="submit"
-                            class="flex-1 sm:flex-none justify-center inline-flex items-center px-8 py-3 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:-translate-y-0.5">
+                            class="inline-flex items-center px-8 py-3 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-xl transition-all shadow-lg hover:-translate-y-0.5">
                             <i class="fas fa-save mr-2"></i> Simpan Banner
                         </button>
                     </div>
@@ -393,10 +559,12 @@
 
             </form>
         </div>
+
     </div>
 
-    {{-- Modal Cropper JS (Tetap dipertahankan untuk Manual Upload) --}}
-    {{-- ... (Kode Cropper Modal persis seperti sebelumnya) ... --}}
+    {{-- ==========================================================
+     MODAL CROPPER JS
+     ========================================================== --}}
     <div id="cropModal"
         class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300">
         <div class="bg-[#2b2d31] w-[95%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300"
@@ -432,10 +600,8 @@
         // LOGIKA TAB SWITCHER
         // ==========================================
         function switchMethod(method) {
-            // Set Value Hidden
             document.getElementById('generation_method').value = method;
 
-            // Reset Tabs Visual
             const tabs = ['manual', 'ai-ref', 'ai-prompt'];
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
@@ -452,7 +618,6 @@
                 }
             });
 
-            // Sembunyikan hasil AI jika kembali ke manual
             if (method === 'manual') {
                 document.getElementById('ai-result-area').classList.add('hidden');
             }
@@ -468,7 +633,6 @@
                 reader.onload = function(e) {
                     imgEl.src = e.target.result;
                     imgEl.classList.remove('hidden');
-                    // Sembunyikan icon plus
                     imgEl.nextElementSibling.style.display = 'none';
                 }
                 reader.readAsDataURL(input.files[0]);
@@ -478,40 +642,106 @@
         // ==========================================
         // LOGIKA SIMULASI GENERATE AI
         // ==========================================
-        function generateAIBanner(type) {
+        async function generateAIBanner(type) {
             const resultArea = document.getElementById('ai-result-area');
             const loadingOverlay = document.getElementById('ai-loading');
             const finalPreview = document.getElementById('ai-final-preview');
+            const aiUrlInput = document.getElementById('ai_generated_image_url');
 
-            // Tampilkan Area Hasil dengan status Loading
             resultArea.classList.remove('hidden');
             loadingOverlay.classList.remove('hidden');
-            finalPreview.src = ''; // Kosongkan dulu
+            finalPreview.classList.add('opacity-50');
 
-            // Di sini kamu akan melakukan AJAX call ke backend Laravel kamu yang terhubung ke API AI (DALL-E, Midjourney, dll)
-            // Untuk UI ini, kita buat simulasi loading 3 detik
+            try {
+                let response;
 
-            setTimeout(() => {
+                // JIKA MODE 3: TEKS (Pollinations AI)
+                if (type === 'prompt') {
+                    const headline = document.getElementById('ai_prop_headline').value;
+                    const typeProp = document.getElementById('ai_prop_type').value;
+
+                    if (!headline) return alert("Mohon isi Headline terlebih dahulu!");
+
+                    const finalPrompt =
+                        `Property banner for ${typeProp}, Headline: "${headline}". High quality architecture photography`;
+
+                    response = await fetch("{{ route('account.banner.generateAi') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: finalPrompt
+                        })
+                    });
+                }
+                // JIKA MODE 2: KOMBINASI GAMBAR (Cloudinary AI)
+                else if (type === 'ref') {
+                    const formData = new FormData();
+
+                    // 1. Ambil file dari input
+                    const ref1 = document.getElementById('ref1').files[0];
+                    const ref2 = document.getElementById('ref2').files[0];
+                    const ref3 = document.getElementById('ref3').files[0];
+
+                    // 2. Ambil Teks Judul dari form (TAMBAHAN BARU)
+                    const titleText = document.getElementById('ai_comb_title').value;
+
+                    if (!ref1) {
+                        loadingOverlay.classList.add('hidden');
+                        return alert("Pilih minimal Referensi 1 (Utama) terlebih dahulu!");
+                    }
+
+                    // Masukkan file ke formData
+                    formData.append('ai_refs[]', ref1);
+                    if (ref2) formData.append('ai_refs[]', ref2);
+                    if (ref3) formData.append('ai_refs[]', ref3);
+
+                    // Masukkan Teks Judul ke formData jika user mengisinya (TAMBAHAN BARU)
+                    if (titleText) {
+                        formData.append('ai_text_title', titleText);
+                    }
+
+                    // Tambahkan CSRF Token
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute(
+                        'content'));
+
+
+                    // Tembak ke route 
+                    response = await fetch("{{ route('account.banner.generateAiKombinasi') }}", {
+                        method: 'POST',
+                        body: formData // JANGAN set Content-Type secara manual jika pakai FormData
+                    });
+                }
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    loadingOverlay.classList.add('hidden');
+                    finalPreview.src = data.url;
+                    finalPreview.classList.remove('opacity-50');
+                    aiUrlInput.value = data.url; // Simpan untuk disubmit nanti
+                    resultArea.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'end'
+                    });
+                } else {
+                    alert("Gagal: " + (data.error || "Terjadi kesalahan"));
+                    loadingOverlay.classList.add('hidden');
+                }
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Koneksi ke server terputus.");
                 loadingOverlay.classList.add('hidden');
-                // Simulasi hasil gambar (URL dummy 2:1)
-                const dummyResultUrl =
-                    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80';
-                finalPreview.src = dummyResultUrl;
-
-                // Simpan URL hasil ke input hidden agar bisa disave saat form di-submit
-                document.getElementById('ai_generated_image_url').value = dummyResultUrl;
-
-                // Pindah scroll ke hasil
-                resultArea.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'end'
-                });
-            }, 3000);
+            }
         }
 
         // ==========================================
         // LOGIKA CROPPER JS (UNTUK MANUAL UPLOAD)
-        // (Dipertahankan sama seperti kode aslimu)
         // ==========================================
         let cropper = null;
         let selectedOriginalFile = null;

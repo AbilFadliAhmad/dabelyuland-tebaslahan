@@ -10,21 +10,10 @@ class EmailService
     public static function sendOtp($target, $otp)
     {
         try {
-            // Template pesan variatif untuk menghindari filter spam email
-            $templates = [
-                "Kode verifikasi Anda adalah: <b>$otp</b>. Segera masukkan kode ini di aplikasi TebasLahan.",
-                "Halo! Gunakan kode <b>$otp</b> untuk memverifikasi akun TebasLahan Anda.",
-                "Ini adalah kode OTP Anda: <b>$otp</b>. Kode ini rahasia, jangan berikan kepada siapapun."
-            ];
-
-            $messageContent = $templates[array_rand($templates)];
-
-            // Mengirim email menggunakan fungsi bawaan Laravel
-            Mail::send([], [], function ($message) use ($target, $messageContent) {
+            // Memanggil template HTML dan mengirim variabel $otp
+            Mail::send('email.otp', ['otp' => $otp], function ($message) use ($target) {
                 $message->to($target)
-                    ->subject('Kode Verifikasi TebasLahan')
-                    // Mengirim sebagai HTML agar tampilan lebih bagus
-                    ->html($messageContent);
+                        ->subject('Kode Verifikasi Keamanan - TebasLahan');
             });
 
             return [
@@ -33,8 +22,8 @@ class EmailService
             ];
 
         } catch (\Throwable $th) {
-            // Log error untuk debugging di storage/logs/laravel.log
-            Log::error("Gmail SMTP Error: " . $th->getMessage());
+            // Log error diubah untuk mendeteksi error Resend
+            Log::error("Resend SMTP Error: " . $th->getMessage());
 
             return [
                 'status'      => false,

@@ -212,8 +212,6 @@
     </header>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Script dijalankan');
-
             /* --- 1. Logika Mobile Menu --- */
             const mobileBtn = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -412,8 +410,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                            ?.content
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+
                     },
                     body: JSON.stringify({
                         ids: favIds
@@ -421,7 +419,6 @@
                 });
 
                 if (!response.ok) throw new Error('Gagal mengambil data dari server');
-
                 const favoritesData = await response.json();
 
                 // 5. Bersihkan kontainer dan Render data
@@ -657,6 +654,53 @@
         }
     </script>
 @else
+    {{-- ==========================================
+         MODAL NOTIFIKASI PROFESIONAL
+         ========================================== --}}
+    <div id="notification-modal"
+        class="fixed inset-0 z-[999] hidden items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 transition-all opacity-0">
+
+        {{-- Content Modal --}}
+        <div id="notification-modal-content"
+            class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl flex flex-col overflow-hidden transform scale-95 transition-transform duration-300">
+
+            {{-- Header Modal --}}
+            <div class="p-6 border-b border-gray-100 flex items-start gap-4 bg-teal-50/30">
+                <div
+                    class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                    <i class="fas fa-bell text-xl"></i>
+                </div>
+                <div class="flex-1 pt-1">
+                    <p class="text-[10px] font-extrabold text-teal-600 uppercase tracking-widest mb-1">Detail
+                        Notifikasi</p>
+                    <h3 id="title-modal-notification"
+                        class="font-extrabold text-gray-900 font-['Plus_Jakarta_Sans'] m-0 text-xl leading-tight"></h3>
+                </div>
+            </div>
+
+            {{-- Body Modal --}}
+            <div class="p-6">
+                <p id="body-modal-notification" class="text-gray-600 text-sm leading-relaxed m-0 whitespace-pre-wrap">
+                </p>
+            </div>
+
+            {{-- Footer / Action Modal --}}
+            <div
+                class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row gap-3 justify-end items-center">
+                <button type="button" onclick="closeModalNotification()"
+                    class="w-full sm:w-auto px-6 py-2.5 text-gray-500 hover:text-gray-700 font-bold text-sm transition-colors focus:outline-none">
+                    Tutup
+                </button>
+                {{-- Tombol Link akan dimunculkan jika URL tersedia --}}
+                <a href="#" id="link-modal-notification" target="_blank"
+                    class="hidden w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 bg-[#0d9488] hover:bg-teal-700 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg no-underline">
+                    Lihat Detail <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                </a>
+            </div>
+
+        </div>
+    </div>
+
     <header
         class="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-[0_2px_10px_rgba(0,0,0,0.02)] font-['Inter']">
         <div class="w-full px-4 sm:px-6 lg:px-8">
@@ -677,16 +721,34 @@
                 <div class="flex items-center gap-3 sm:gap-5 ml-auto">
 
                     {{-- Tombol Upgrade Cepat (Hanya User) --}}
-                    @if (Auth::check() && Auth::user()->role !== 'admin')
-                        <a href="#"
-                            class="hidden sm:inline-flex items-center px-4 py-2 bg-gradient-to-r from-amber-200 to-yellow-400 hover:from-amber-300 hover:to-yellow-500 text-yellow-900 text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 no-underline">
-                            <i class="fas fa-crown mr-2"></i> Upgrade Pro
-                        </a>
+                    @if (Auth::user()?->role !== 'admin')
+                        <div
+                            class="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:shadow-md transition-all">
+                            {{-- Ikon Koin --}}
+                            <div
+                                class="w-6 h-6 sm:w-10 sm:h-10 rounded-full flex items-center justify-center p-1 relative overflow-hidden">
+                                <img src="{{ asset('assets/images/icons/koin.svg') }}"
+                                    class="w-full h-full object-contain relative z-10" alt="Koin">
+                            </div>
+
+                            {{-- Saldo --}}
+                            <span
+                                class="font-extrabold text-gray-800 text-xs sm:text-sm px-2 font-heading tracking-tight">
+                                {{ number_format(Auth::user()?->dabelyu_koin ?? 0, 0, ',', '.') }}
+                            </span>
+
+                            {{-- Tombol Top Up (+) --}}
+                            <a href="{{ route('user.topup.index') }}"
+                                class="w-6 h-6 sm:w-7 sm:h-7 bg-gray-900 hover:bg-black text-white rounded-full flex items-center justify-center transition-transform hover:scale-105 focus:outline-none no-underline"
+                                title="Top Up Koin">
+                                <i class="fas fa-plus text-[10px] sm:text-xs"></i>
+                            </a>
+                        </div>
                     @endif
 
                     {{-- Dropdown Notifikasi --}}
                     <div class="relative" id="notificationDropdown">
-                        <button id="notifBtn"
+                        <button onclick="openPanelNotication()" id="notifBtn"
                             class="relative p-2.5 text-gray-500 hover:text-[#0d9488] transition-colors rounded-full hover:bg-gray-50 focus:outline-none">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                 stroke="currentColor">
@@ -694,16 +756,11 @@
                                     d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                             </svg>
 
-                            @if (isset($pendingUsers) && $pendingUsers->count() > 0)
-                                <span class="absolute top-1.5 right-1.5 flex h-4 w-4">
-                                    <span
-                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span
-                                        class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] text-white items-center justify-center font-bold border-2 border-white">
-                                        {{ $pendingUsers->count() }}
-                                    </span>
+                            <span id="notifikasi-dot" class="absolute top-1.5 right-1.5 hidden h-4 w-4">
+                                <span
+                                    class="relative inline-flex rounded-full w-3 h-3 bg-red-500 text-[10px] text-white items-center justify-center font-bold border-2 border-white">
                                 </span>
-                            @endif
+                            </span>
                         </button>
 
                         <div id="notifMenu"
@@ -711,42 +768,8 @@
                             <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
                                 <h6 class="text-sm font-bold text-gray-800 m-0">Notifikasi Masuk</h6>
                             </div>
-                            <div
+                            <div id="notifPanel"
                                 class="max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                @if (isset($pendingUsers) && $pendingUsers->count() > 0)
-                                    @foreach ($pendingUsers as $user)
-                                        <a href="{{ route('admin.list.users') }}"
-                                            class="flex items-start px-5 py-4 hover:bg-teal-50/50 transition-colors border-b border-gray-50 no-underline last:border-0">
-                                            <div
-                                                class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-3">
-                                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path
-                                                        d="M6.25 6.375a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0zM3.25 19.125a7.125 7.125 0 0 1 14.25 0v.003l-.001.119a.75.75 0 0 1-.363.63 13.067 13.067 0 0 1-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 0 1-.364-.63l-.001-.122zM19.75 7.5a.75.75 0 0 0-1.5 0v2.25H16a.75.75 0 0 0 0 1.5h2.25v2.25a.75.75 0 0 0 1.5 0v-2.25H22a.75.75 0 0 0 0-1.5h-2.25V7.5z" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-800 m-0 font-medium">User Baru: <span
-                                                        class="font-bold">{{ $user->name }}</span></p>
-                                                <p class="text-xs text-gray-500 m-0 mt-1">Perlu verifikasi akses
-                                                    segera.</p>
-                                            </div>
-                                        </a>
-                                    @endforeach
-                                @else
-                                    <div class="px-5 py-8 text-center flex flex-col items-center">
-                                        <div
-                                            class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-3">
-                                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                                                stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M9.143 17.082a24.248 24.248 0 0 0 3.857.38 24.243 24.243 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c.31.115.626.223.946.326z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M12 21a3.001 3.001 0 0 0 2.83-2M3 3l18 18" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-sm text-gray-500 m-0">Tidak ada notifikasi baru</p>
-                                    </div>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -782,8 +805,7 @@
                             </div>
 
                             <div class="p-2">
-                                <a href="#"
-                                    onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();"
+                                <a href="#" onclick="handleLogout(event)"
                                     class="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors no-underline">
                                     <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                         stroke="currentColor">
@@ -795,15 +817,146 @@
                             </div>
                         </div>
                     </div>
-                    <form id="logout-form-header" action="{{ route('logout') }}" method="POST" class="hidden">
-                        @csrf
-                    </form>
                 </div>
             </div>
         </div>
     </header>
+
+    </div>
     <script>
+        async function openPanelNotication() {
+            const panel = document.getElementById('notifPanel');
+            const emptyStateHTML = `
+                <div class="px-5 py-8 text-center flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-3">
+                        <i class="fas fa-bell-slash text-xl"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-500 m-0">Tidak ada notifikasi baru</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch("{{ route('account.notification.list') }}");
+                const data = await response.json();
+
+                panel.innerHTML = ''; // Clear panel sebelum diisi ulang
+
+                if (data?.success && data.notifications.length > 0) {
+                    data.notifications.map(item => {
+                        // Pass ID notifikasi ke dalam function pembuka modal
+                        const html = `
+                            <div id="notif-item-${item.id}" onclick="openModalNotication(${item.id}, '${item.title.replace(/'/g, "\\'")}', '${item.body.replace(/'/g, "\\'")}', '${item.url || ''}')"
+                                class="flex cursor-pointer items-start px-5 py-4 hover:bg-teal-50/50 transition-colors border-b border-gray-50 no-underline last:border-0 group">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mr-3 group-hover:bg-teal-100 transition-colors">
+                                    <i class="fas fa-bell text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-800 m-0 font-bold group-hover:text-teal-700 transition-colors">${item.title}</p>
+                                    <p class="text-xs text-gray-500 m-0 mt-1 line-clamp-2">${item.body}</p>
+                                </div>
+                            </div>
+                        `;
+                        panel.insertAdjacentHTML('beforeend', html);
+                    });
+                } else {
+                    panel.innerHTML = emptyStateHTML;
+                }
+            } catch (error) {
+                console.error("Gagal mengambil notifikasi", error);
+                panel.innerHTML = emptyStateHTML;
+            }
+        }
+
+        async function openModalNotication(id, title, body, url) {
+            const modal = document.getElementById('notification-modal');
+            const modalContent = document.getElementById('notification-modal-content');
+            const linkBtn = document.getElementById('link-modal-notification');
+
+            // Set Data ke Modal
+            document.getElementById('title-modal-notification').innerText = title;
+            document.getElementById('body-modal-notification').innerText = body;
+
+            // Handle Tombol Link
+            if (url && url.trim() !== '' && url !== 'null') {
+                linkBtn.href = url;
+                linkBtn.classList.remove('hidden');
+                linkBtn.classList.add('inline-flex');
+            } else {
+                linkBtn.classList.add('hidden');
+                linkBtn.classList.remove('inline-flex');
+            }
+
+            // Animasi Buka Modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+
+            // Hapus Notifikasi di Background (Silently)
+            deleteNotificationBackground(id);
+        }
+
+        function closeModalNotification() {
+            const modal = document.getElementById('notification-modal');
+            const modalContent = document.getElementById('notification-modal-content');
+
+            // Animasi Tutup Modal
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = 'auto';
+
+                // Refresh list notifikasi setelah modal ditutup
+                openPanelNotication();
+            }, 300);
+        }
+
+        async function deleteNotificationBackground(id) {
+            if (!id) return;
+
+            try {
+                // Pastikan Anda sudah membuat Route untuk fungsi destroy ini
+                const response = await fetch(`{{ route('account.notification.destroy') }}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}' // Sangat penting di Laravel
+                    },
+                    body: JSON.stringify({
+                        id
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Opsional: Hapus elemen notifikasi dari dropdown secara langsung
+                    const itemEl = document.getElementById(`notif-item-${id}`);
+                    if (itemEl) itemEl.remove();
+                }
+            } catch (error) {
+                console.error("Gagal menghapus notifikasi di background", error);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+
+            // Chek apakah ada notifikasi
+            async function checkNotifications() {
+                const response = await fetch("{{ route('account.notification.check') }}")
+                const data = await response.json()
+
+                if (data?.exists) document.getElementById('notifikasi-dot').classList.replace('hidden', 'flex');
+
+            }
+
+            checkNotifications()
+
             // --- LOGIKA DROPDOWN HEADER (Notifikasi & Profil) ---
             const notifBtn = document.getElementById('notifBtn');
             const notifMenu = document.getElementById('notifMenu');

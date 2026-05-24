@@ -40,11 +40,6 @@ class ContactController extends Controller
         return redirect()->route('contacts.index')->with('success', 'Kontak berhasil ditambahkan.');
     }
 
-    // public function show(Contact $contact)
-    // {
-    //     return view('admin.contacts.show', compact('contact'));
-    // }
-
     public function edit(Contact $contact)
     {
         $isEdit = true;

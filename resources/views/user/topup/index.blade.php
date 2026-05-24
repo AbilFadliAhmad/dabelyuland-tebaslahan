@@ -109,7 +109,6 @@
                                     class="text-4xl md:text-5xl font-extrabold text-white font-['Plus_Jakarta_Sans'] leading-none">
                                     {{ number_format($dabelyuKoin ?? 0, 0, ',', '.') }}
                                 </p>
-                                <span class="text-amber-400 font-bold mb-1">Koin</span>
                             </div>
                         </div>
                     </div>
@@ -117,9 +116,46 @@
             </div>
 
             {{-- ==========================================================
+             BONUS: PENDING TRANSACTION NOTIFICATION CARD
+             ========================================================== --}}
+            <div id="pendingTransactionContainer">
+                @if (isset($midtransDetail))
+                    <div
+                        class="mb-12 p-6 sm:p-8 bg-amber-50/60 border-2 border-amber-200 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm backdrop-blur-sm">
+                        <div class="flex items-center gap-5 text-center md:text-left flex-col md:flex-row">
+                            <div
+                                class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                                <i class="fas fa-hourglass-half animate-spin" style="animation-duration: 3s;"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-['Plus_Jakarta_Sans'] text-lg font-bold text-gray-900 mb-1">Pembayaran
+                                    Menunggu
+                                    Penyelesaian</h4>
+                                <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                    Anda memiliki transaksi aktif <span
+                                        class="font-bold text-amber-700">{{ $midtransDetail->order_id }}</span> untuk
+                                    pembelian
+                                    <span class="font-bold text-gray-800">{{ $midtransDetail->koin ?? 0 }} Koin</span>
+                                    sebesar
+                                    <span class="font-bold text-teal-600">Rp
+                                        {{ number_format($midtransDetail->gross_amount, 0, ',', '.') }}</span> via
+                                    <span
+                                        class="font-bold uppercase text-gray-700">{{ $midtransDetail->payment_type }}</span>.
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="resumePendingPayment()"
+                            class="relative overflow-hidden bg-gray-900 hover:bg-gray-600 text-white px-6 py-3.5 rounded-xl font-extrabold text-sm shadow-md shadow-amber-500/20 transition-all shrink-0 w-full md:w-auto transform active:scale-95">
+                            Selesaikan Pembayaran
+                        </button>
+                    </div>
+                @endif
+            </div>
+
+
+            {{-- ==========================================================
              2. PRICING CARDS GRID (Dynamic from Database)
              ========================================================== --}}
-
             @if ($packages->count() > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 xl:gap-5 items-end">
 
@@ -234,7 +270,7 @@
 
                                     <button type="button"
                                         onclick="confirmPurchase('{{ $pkg->id }}', '{{ $pkg->koin }}', '{{ $pkg->harga }}')"
-                                        class="w-full py-3.5 rounded-xl font-extrabold text-sm transition-all duration-300 {{ $btnClass }}">
+                                        class="w-full buy-pkg-btn py-3.5 rounded-xl font-extrabold text-sm transition-all duration-300 {{ $btnClass }}">
                                         Beli Sekarang
                                     </button>
                                 </div>
@@ -249,7 +285,8 @@
                 <div class="bg-white rounded-3xl border border-gray-200 p-12 text-center shadow-sm">
                     <i class="fas fa-box-open text-gray-300 text-6xl mb-4"></i>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">Toko Koin Sedang Kosong</h3>
-                    <p class="text-gray-500 text-sm">Saat ini belum ada paket koin yang tersedia. Silakan hubungi admin.</p>
+                    <p class="text-gray-500 text-sm">Saat ini belum ada paket koin yang tersedia. Silakan hubungi admin.
+                    </p>
                 </div>
             @endif
 
@@ -263,7 +300,8 @@
                         class="w-16 h-16 bg-teal-50 text-[#0d9488] rounded-2xl flex items-center justify-center text-2xl mx-auto md:mx-0 mb-4">
                         <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h4 class="font-['Plus_Jakarta_Sans'] text-xl font-bold text-gray-900 mb-2">Transaksi Aman & Instan</h4>
+                    <h4 class="font-['Plus_Jakarta_Sans'] text-xl font-bold text-gray-900 mb-2">Transaksi Aman & Instan
+                    </h4>
                     <p class="text-sm text-gray-500">Koin akan langsung masuk ke akun Anda setelah pembayaran berhasil
                         dikonfirmasi.</p>
                 </div>
@@ -271,13 +309,15 @@
                     <div class="p-4 rounded-2xl bg-gray-50 border border-gray-300">
                         <h5 class="font-bold text-gray-800 text-sm mb-1"><i class="fas fa-star text-amber-500 mr-2"></i>
                             Highlight Properti</h5>
-                        <p class="text-xs text-gray-500">Gunakan koin untuk membuat properti Anda tampil di urutan teratas
+                        <p class="text-xs text-gray-500">Gunakan koin untuk membuat properti Anda tampil di urutan
+                            teratas
                             pencarian.</p>
                     </div>
                     <div class="p-4 rounded-2xl bg-gray-50 border border-gray-300">
                         <h5 class="font-bold text-gray-800 text-sm mb-1"><i
                                 class="fas fa-thumbs-up text-[#0d9488] mr-2"></i> Rekomendasi Utama</h5>
-                        <p class="text-xs text-gray-500">Gunakan koin untuk memasang badge "Rekomendasi" agar lebih dilirik
+                        <p class="text-xs text-gray-500">Gunakan koin untuk memasang badge "Rekomendasi" agar lebih
+                            dilirik
                             pembeli.</p>
                     </div>
                 </div>
@@ -307,7 +347,8 @@
                     <p class="text-xs font-bold text-teal-600 uppercase tracking-widest mb-1">Total Pembayaran</p>
                     <span id="modalOrderId"
                         class="text-[10px] text-gray-600 font-semibold uppercase tracking-wide mb-1"></span>
-                    <h2 id="modalAmount" class="text-3xl font-extrabold text-gray-900 font-['Plus_Jakarta_Sans']">Rp 0</h2>
+                    <h2 id="modalAmount" class="text-3xl font-extrabold text-gray-900 font-['Plus_Jakarta_Sans']">Rp 0
+                    </h2>
                 </div>
             </div>
 
@@ -320,7 +361,8 @@
                         @foreach (['qris' => 'QRIS (Semua E-Wallet)', 'gopay' => 'GoPay', 'shopeepay' => 'ShopeePay'] as $code => $label)
                             <label
                                 class="group relative flex items-center p-4 border-2 border-gray-300 rounded-2xl cursor-pointer hover:border-teal-500 hover:bg-teal-50/30 transition-all">
-                                <input type="radio" name="pay_method" value="{{ $code }}" class="hidden peer">
+                                <input type="radio" name="pay_method" value="{{ $code }}"
+                                    class="hidden peer">
                                 <div
                                     class="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-300 group-hover:scale-110 transition-transform">
                                     <img src="/assets/images/icons/{{ $code }}.svg"
@@ -346,7 +388,7 @@
                     <div class="mb-6">
                         <div id="timer"
                             class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs font-bold animate-pulse">
-                            <i class="far fa-clock"></i> <span>15:00</span>
+                            <i class="far fa-clock"></i> <span></span>
                         </div>
                     </div>
 
@@ -382,9 +424,75 @@
 
 @section('script')
     <script>
+        // Check jika ada data midtrans maka nonaktifkan tombol package
+        document.addEventListener('DOMContentLoaded', () => {
+            const midtransDetail = @json($midtransDetail);
+            if (midtransDetail) {
+                disablePackageButtons();
+            }
+        });
+
+        // FUNGSI NONAKTIFKAN TOMBOL BELI PAKET
+        function disablePackageButtons() {
+            document.querySelectorAll('.buy-pkg-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.className =
+                    "w-full py-3.5 rounded-xl font-extrabold text-sm bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200";
+                btn.setAttribute('onclick',
+                    "Swal.fire('Perhatian', 'Selesaikan atau batalkan pembayaran pending Anda terlebih dahulu.', 'warning')"
+                );
+            });
+        }
+
+        // FUNGSI INJECT PENDING TRANSACTION SAAT INISIALISASI PEMBAYARAN
+        function injectPendingTransaction(orderId, koin, grossAmount, paymentType) {
+            const container = document.getElementById('pendingTransactionContainer');
+            if (!container) return;
+
+            const formattedPrice = new Intl.NumberFormat('id-ID').format(grossAmount);
+
+            container.innerHTML = `
+                <div class="mb-12 p-6 sm:p-8 bg-amber-50/60 border-2 border-amber-200 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm backdrop-blur-sm">
+                    <div class="flex items-center gap-5 text-center md:text-left flex-col md:flex-row">
+                        <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                            <i class="fas fa-hourglass-half animate-spin" style="animation-duration: 3s;"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-['Plus_Jakarta_Sans'] text-lg font-bold text-gray-900 mb-1">Pembayaran Menunggu Penyelesaian</h4>
+                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                Anda memiliki transaksi aktif <span class="font-bold text-amber-700">${orderId}</span> untuk pembelian
+                                <span class="font-bold text-gray-800">${koin} Koin</span> sebesar
+                                <span class="font-bold text-teal-600">Rp ${formattedPrice}</span> via
+                                <span class="font-bold uppercase text-gray-700">${paymentType}</span>.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="resumePendingPayment()"
+                        class="relative overflow-hidden bg-gray-900 hover:bg-gray-600 text-white px-6 py-3.5 rounded-xl font-extrabold text-sm shadow-md shadow-amber-500/20 transition-all shrink-0 w-full md:w-auto transform active:scale-95">
+                        Selesaikan Pembayaran
+                    </button>
+                </div>
+            `;
+        }
+
         let currentPackageId = null;
         let timerInterval = null;
         let pollingInterval = null; // Tambahkan variabel global untuk polling
+
+        function resumePendingPayment() {
+            @if (isset($midtransDetail))
+                const dataFromMidtrans = @json($midtransDetail);
+                // Atur nilai nominal pembayaran di modal
+                document.getElementById('modalAmount').innerText =
+                    `Rp ${new Intl.NumberFormat('id-ID').format(dataFromMidtrans.gross_amount)}`;
+
+                // Tampilkan container modal utama
+                document.getElementById('paymentModal').classList.remove('hidden');
+
+                // Langsung bypass menuju Step 2 (Instruksi QR/Deeplink)
+                showInstruction(dataFromMidtrans);
+            @endif
+        }
 
         function confirmPurchase(packageId, koinAmount, price) {
             currentPackageId = packageId;
@@ -426,22 +534,31 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch("{{ route('user.topup.initiate') }}", {
-                    method: "POST",
+                const response = await axios.post("{{ route('user.topup.initiate') }}", {
+                    package_id: currentPackageId,
+                    payment_method: selectedMethod.value
+                }, {
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                    },
-                    body: JSON.stringify({
-                        package_id: currentPackageId,
-                        payment_method: selectedMethod.value
-                    })
+                    }
                 });
-                const data = await response.json();
-                console.log('data: ', data);
 
-                if (data.status === 'success') showInstruction(data.data);
-                else Swal.fire('Error', data.message, 'error');
+                const data = response.data;
+
+                if (data.status === 'success') {
+                    showInstruction(data.data)
+                    const totalKoin = data.data.metadata?.koin || 0;
+
+                    // SUNTIK KARTU BONUS INSTAN KE HALAMAN UTAMA
+                    injectPendingTransaction(data.data.order_id, totalKoin, data.data.gross_amount, data.data
+                        .payment_type);
+
+                    // Kunci tombol beli paket lain
+                    disablePackageButtons();
+                } else {
+                    Swal.fire('Error', data.message, 'error')
+                }
 
             } catch (error) {
                 Swal.fire('Error', error.message, 'error');
@@ -461,8 +578,8 @@
             const paymentType = midtransData.payment_type;
 
             // 2. Cari link berdasarkan isi data actions dari log kamu
-            const deeplink = midtransData.actions.find(a => a.name.includes('deeplink'));
-            const qrCode = midtransData.actions.find(a => a.name.includes('qr-code'));
+            const deeplink = midtransData?.actions?.find(a => a.name.includes('deeplink')) || null;
+            const qrCode = midtransData?.actions?.find(a => a.name.includes('qr-code')) || null;
 
             // 3. Logika Tampilan Dinamis
             if (paymentType === 'qris' && qrCode) {
@@ -487,32 +604,86 @@
 
                 // Opsional: Jika user di mobile, bisa langsung diarahkan otomatis
                 // window.location.href = deeplink.url;
-            } else {
-                // Fallback jika tidak ada deeplink tapi ada QR (seperti GoPay di desktop)
-                qrContainer.innerHTML = `<img src="${qrCode.url}" class="w-56 h-56 rounded-2xl shadow-md mx-auto">`;
             }
 
-            // 4. Mulai Timer 15 Menit (900 detik)
-            startTimer(900);
+            // Hitung sisa masa berlaku secara presisi jika properti expiry_time tersedia
+            let durationSeconds = 900; // Default 15 menit
+            if (midtransData.expiry_time) {
+                const expiry = new Date(midtransData.expiry_time).getTime();
+                const now = new Date().getTime();
+                const diff = Math.floor((expiry - now) / 1000);
+                if (diff > 0) durationSeconds = diff;
+            }
+
+            startTimer(durationSeconds);
+            startPolling(midtransData.order_id);
+        }
+
+        function startPolling(orderId) {
+            if (pollingInterval) clearInterval(pollingInterval);
+
+            // 1. Bungkus logika ke dalam fungsi terpisah
+            async function checkStatus() {
+                try {
+                    let url = `{{ route('user.topup.status', 'orderId') }}`;
+                    url = url.replace('orderId', orderId);
+
+                    // Perbaikan Axios: Langsung ambil data dari response.data
+                    const response = await axios.get(url);
+                    const data = response.data;
+
+                    if (data.status === 'settlement') {
+                        clearInterval(pollingInterval);
+                        clearInterval(timerInterval);
+                        Swal.fire({
+                            title: 'Pembayaran Berhasil!',
+                            text: 'Koin Anda telah otomatis ditambahkan.',
+                            icon: 'success',
+                            confirmButtonColor: '#0d9488'
+                        }).then(() => location.reload());
+                    } else if (['expire', 'cancel', 'failure'].includes(data.status)) {
+                        clearInterval(pollingInterval);
+                        Swal.fire('Gagal', 'Transaksi berakhir atau dibatalkan.', 'error').then(() => location
+                            .reload());
+                    }
+                } catch (e) {
+                    console.error("Polling error:", e);
+                }
+            }
+
+            // 2. Jalankan SEKALI secara langsung saat fungsi startPolling dipanggil
+            checkStatus();
+
+            // 3. Jalankan secara berkala setiap 5 detik setelahnya
+            pollingInterval = setInterval(checkStatus, 5000);
         }
 
         function startTimer(duration) {
             let timer = duration,
                 minutes, seconds;
+
             clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
+
+            // 1. Bungkus logika hitung mundur ke dalam fungsi terpisah
+            function updateTimer() {
                 minutes = parseInt(timer / 60, 10);
                 seconds = parseInt(timer % 60, 10);
                 minutes = minutes < 10 ? "0" + minutes : minutes;
                 seconds = seconds < 10 ? "0" + seconds : seconds;
 
                 document.querySelector('#timer span').textContent = minutes + ":" + seconds;
+
                 if (--timer < 0) {
                     clearInterval(timerInterval);
-                    Swal.fire('Waktu Habis', 'Sesi pembayaran telah berakhir.', 'warning').then(() => location
-                        .reload());
+                    Swal.fire('Waktu Habis', 'Sesi pembayaran telah berakhir.', 'warning').then(() => location.reload());
                 }
-            }, 1000);
+            }
+
+            // 2. Jalankan SEKALI secara langsung saat modal dibuka
+            updateTimer();
+
+            // 3. Jalankan secara berkala setiap 1 detik setelahnya
+            timerInterval = setInterval(updateTimer, 1000);
         }
     </script>
 @endsection

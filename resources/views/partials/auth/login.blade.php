@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     {{-- Tailwind CSS (Vite V4) --}}
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     {{-- SweetAlert2 untuk UI Notifikasi --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -139,7 +139,7 @@
                     class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mr-3 group-hover:bg-teal-50 transition-colors">
                     <i class="fas fa-arrow-left"></i>
                 </div>
-                <span class="hidden sm:inline">Kembali</span>
+                <span class="hidden sm:inline">Beranda</span>
             </a>
 
             <div class="w-full max-w-md mx-auto relative mt-10">
@@ -163,8 +163,11 @@
                     @endif
 
                     {{-- MENGGUNAKAN FORM POST ASLI KE BACKEND --}}
-                    <form action="{{ route('login') }}" method="POST">
+                    <form action="{{ route('login') }}" method="POST" onsubmit="handleLoginSubmit(event)">
                         @csrf
+
+                        {{-- Hidden --}}
+                        <input type="hidden" name="fcm_token" id="login_fcm_token" value="">
 
                         <div class="mb-5">
                             <label
@@ -187,20 +190,10 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between mb-8">
-                            <label class="flex items-center cursor-pointer group">
-                                {{-- Nama input remember me --}}
-                                <input type="checkbox" name="remember"
-                                    class="w-4 h-4 text-[#0d9488] border-gray-300 rounded focus:ring-[#0d9488] transition-colors">
-                                <span
-                                    class="ml-2 text-sm text-gray-500 font-medium group-hover:text-gray-800 transition-colors">Ingat
-                                    Saya</span>
-                            </label>
-                            <button type="button" onclick="switchForm('form-forgot')"
-                                class="text-sm font-bold text-[#0d9488] hover:text-[#0f766e] transition-colors">
-                                Lupa sandi?
-                            </button>
-                        </div>
+                        <button type="button" onclick="switchForm('form-forgot')"
+                            class="text-sm font-bold text-[#0d9488] hover:text-[#0f766e] transition-colors mb-8">
+                            Lupa sandi?
+                        </button>
 
                         <button type="submit"
                             class="w-full py-3.5 bg-[#0d9488] text-white font-bold rounded-xl shadow-lg shadow-teal-700/20 hover:bg-[#0f766e] transition-all transform hover:-translate-y-0.5">
@@ -320,21 +313,28 @@
 
                     <form onsubmit="handleForgotSubmit(event)">
 
+                        {{-- TAMBAHAN: Input Username Wajib --}}
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Username
+                                Terdaftar</label>
+                            <input type="text" id="forgot_name" placeholder="Misal: budisantoso" required
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 focus:border-[#0d9488] transition-all placeholder-gray-400">
+                        </div>
+
                         <div class="flex bg-gray-100 p-1 rounded-xl mb-4">
+                            {{-- ... Tombol Email & WA Tetap ... --}}
                             <button type="button" id="tab_forgot_email"
                                 onclick="toggleContactMethod('forgot', 'email')"
-                                class="flex-1 py-2.5 text-sm font-bold rounded-lg bg-white shadow-sm text-gray-900 transition-all focus:outline-none">
-                                <i class="fas fa-envelope mr-2"></i>Email
-                            </button>
+                                class="flex-1 py-2.5 text-sm font-bold rounded-lg bg-white shadow-sm text-gray-900 transition-all focus:outline-none"><i
+                                    class="fas fa-envelope mr-2"></i>Email</button>
                             <button type="button" id="tab_forgot_wa" onclick="toggleContactMethod('forgot', 'wa')"
-                                class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-700 transition-all focus:outline-none">
-                                <i class="fab fa-whatsapp mr-2"></i>WhatsApp
-                            </button>
+                                class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-700 transition-all focus:outline-none"><i
+                                    class="fab fa-whatsapp mr-2"></i>WhatsApp</button>
                         </div>
 
                         <div id="group_forgot_email" class="mb-8 block">
                             <input type="email" id="forgot_email" placeholder="Masukkan email terdaftar"
-                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 focus:border-[#0d9488] transition-all placeholder-gray-400">
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 transition-all placeholder-gray-400">
                         </div>
 
                         <div id="group_forgot_wa" class="mb-8 hidden">
@@ -342,20 +342,18 @@
                                 <span
                                     class="inline-flex items-center px-4 py-3.5 bg-gray-100 border border-r-0 border-gray-200 rounded-l-xl text-sm font-bold text-gray-600">+62</span>
                                 <input type="number" id="forgot_wa" placeholder="81234567890"
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-r-xl text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 focus:border-[#0d9488] transition-all placeholder-gray-400">
+                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-r-xl text-sm font-medium text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 transition-all placeholder-gray-400">
                             </div>
                         </div>
 
                         <button type="submit"
-                            class="w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black transition-all transform hover:-translate-y-0.5">
-                            Kirim Kode OTP
-                        </button>
+                            class="w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black transition-all transform hover:-translate-y-0.5">Kirim
+                            Kode OTP</button>
 
                         <div class="mt-8 text-center">
                             <button type="button" onclick="switchForm('form-login')"
-                                class="text-sm text-gray-500 font-bold hover:text-[#0d9488] transition-colors bg-transparent border-none p-0">
-                                Kembali ke halaman Login
-                            </button>
+                                class="text-sm text-gray-500 font-bold hover:text-[#0d9488] transition-colors bg-transparent border-none p-0">Kembali
+                                ke halaman Login</button>
                         </div>
                     </form>
                 </div>
@@ -498,7 +496,6 @@
                 </button>
             </div>
         </div>
-
     </div>
 
     {{-- ==========================================================
@@ -509,6 +506,8 @@
         let activeRegMethod = 'email';
         let activeForgotMethod = 'email';
         let currentOtpContext = '';
+        let tempRegisterData = null;
+        let tempForgotData = {}; // Variabel penampung data Lupa Sandi
 
         // === FUNGSI: TOGGLE PASSWORD (MATA) ===
         function togglePassword(inputId, iconId) {
@@ -570,6 +569,77 @@
             });
         });
 
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const tokenInput = document.getElementById('login_fcm_token');
+
+            // Cek apakah browser mendukung notifikasi dan belum meminta izin
+            if ('Notification' in window && Notification.permission === 'default') {
+                const result = await Swal.fire({
+                    title: 'Tetap Terhubung! 🔔',
+                    text: 'Aktifkan notifikasi sekarang agar Anda tidak ketinggalan pemberitahuan penting, bahkan saat Anda tidak sedang membuka aplikasi.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d9488',
+                    cancelButtonColor: '#424242',
+                    confirmButtonText: 'Ya, Aktifkan',
+                    cancelButtonText: 'Nanti Saja'
+                });
+
+                if (result.isConfirmed) {
+                    // Minta izin ke browser jika user menekan "Ya, Aktifkan"
+                    await Notification.requestPermission();
+                }
+            }
+
+            // Tampilkan efek loading untuk proses Login
+            Swal.fire({
+                title: 'Sedang Masuk...',
+                text: 'Mempersiapkan akses Anda',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Tarik Token FCM (hanya akan berhasil jika permission sudah 'granted')
+            try {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    // Bungkus proses FCM ke dalam Promise utama
+                    const fetchTokenPromise = (async () => {
+                        const registration = await navigator.serviceWorker.register(
+                            '/firebase-messaging-sw.js', {  
+                                scope: '/'
+                            });
+                        await navigator.serviceWorker.ready;
+                        return await getFirebaseToken(firebaseMessaging, {
+                            serviceWorkerRegistration: registration,
+                        });
+                    })();
+
+                    // Buat Promise khusus untuk batas waktu (timeout 5 detik)
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('FCM_TIMEOUT')), 10000)
+                    );
+
+                    // Balapan antara proses ambil token vs batas waktu
+                    const currentToken = await Promise.race([fetchTokenPromise, timeoutPromise]);
+
+                    if (currentToken) {
+                        tokenInput.value = currentToken;
+                    }
+                } else {
+                    console.warn('Izin notifikasi tidak diberikan. Melanjutkan login tanpa FCM token.');
+                }
+            } catch (err) {
+                console.error('Terjadi kesalahan saat mengambil token FCM:', err);
+            }
+
+            // Eksekusi pengiriman form ke backend Laravel
+            form.submit();
+        }
+
         // === FUNGSI: SWITCH FORM ===
         function switchForm(targetId) {
             const sections = document.querySelectorAll('.form-section');
@@ -617,33 +687,46 @@
         }
 
         // === FUNGSI: SUBMIT REGISTRASI (Buka Modal) ===
-        // Variabel sementara di dalam <script> login.blade.php
-        let tempRegisterData = null;
-
-        async function handleRegisterSubmit(e) {
+        function handleRegisterSubmit(e) {
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
 
-            // Ambil data untuk dikirim OTP
-            const contact = activeRegMethod === 'email' ? formData.get('email') : formData.get('whatsapp');
+            // Simpan data pendaftaran ke variabel sementara (di memori, bukan localStorage agar aman)
+            tempRegisterData = Object.fromEntries(formData.entries());
 
-            if (!contact) {
+            // Buka Modal Agreement
+            const modal = document.getElementById('agreementModal');
+            modal.classList.remove('hidden');
+            modal.children[1].classList.add('modal-enter');
+        }
+
+        // Tutup Modal Agreement
+        function closeAgreementModal() {
+            const modal = document.getElementById('agreementModal');
+            modal.children[1].classList.remove('modal-enter');
+            modal.children[1].classList.add('modal-exit');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // Lanjut ke OTP
+        async function proceedToRegisterOTP() {
+            const isAgreed = document.getElementById('agreeCheckbox').checked;
+
+            if (!isAgreed) {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Kontak wajib diisi!'
+                    icon: 'warning',
+                    title: 'Perhatian',
+                    text: 'Anda harus menyetujui syarat & ketentuan untuk melanjutkan.'
                 });
                 return;
             }
-
-            // Simpan data pendaftaran ke variabel sementara (di memori, bukan localStorage agar aman)
-            tempRegisterData = Object.fromEntries(formData.entries());
 
             // Tampilkan Loading
             Swal.showLoading();
 
             try {
+                const contact = activeRegMethod === 'email' ? tempRegisterData.email : tempRegisterData.whatsapp;
                 const response = await fetch("{{ route('send-otp') }}", {
                     method: 'POST',
                     headers: {
@@ -660,10 +743,10 @@
 
                 if (response.ok) {
                     Swal.close();
-                    // Buka Modal Agreement dulu sesuai desainmu
-                    const modal = document.getElementById('agreementModal');
-                    modal.classList.remove('hidden');
-                    modal.children[1].classList.add('modal-enter');
+                    closeAgreementModal();
+                    currentOtpContext = 'register';
+                    switchForm('form-otp');
+                    startOtpTimer();
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -672,6 +755,7 @@
                     });
                 }
             } catch (error) {
+                console.error(error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -680,113 +764,206 @@
             }
         }
 
-        // Tutup Modal Agreement
-        function closeAgreementModal() {
-            const modal = document.getElementById('agreementModal');
-            modal.children[1].classList.remove('modal-enter');
-            modal.children[1].classList.add('modal-exit');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
+        // === FUNGSI: RESEND OTP CERDAS (Untuk Registrasi & Lupa Sandi) ===
+        async function resendOTP() {
+            let contact, type;
 
-        // Lanjut ke OTP
-        function proceedToRegisterOTP() {
-            const isAgreed = document.getElementById('agreeCheckbox').checked;
-            if (!isAgreed) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Perhatian',
-                    text: 'Anda harus menyetujui syarat & ketentuan untuk melanjutkan.'
-                });
-                return;
+            if (currentOtpContext === 'register') {
+                if (!tempRegisterData) return switchForm('form-register');
+                contact = activeRegMethod === 'email' ? tempRegisterData.email : tempRegisterData.whatsapp;
+                type = activeRegMethod === 'email' ? 'email' : 'wa';
+            } else if (currentOtpContext === 'forgot') {
+                if (!tempForgotData.contact) return switchForm('form-forgot');
+                contact = tempForgotData.contact;
+                type = tempForgotData.type;
             }
 
-            closeAgreementModal();
-            currentOtpContext = 'register';
-            switchForm('form-otp');
-            startOtpTimer();
-        }
+            Swal.showLoading();
+            try {
+                // Baik Registrasi maupun Lupa Sandi, resend-nya cukup menggunakan rute /send-otp dasar
+                const response = await axios.post("{{ route('send-otp') }}", {
+                    contact,
+                    type
+                }, {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
 
-        async function resendOTP() {
-            // 1. Pastikan data pendaftaran masih ada di memori
-            if (!tempRegisterData) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'OTP Terkirim',
+                    text: 'Kode verifikasi baru telah dikirim!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                startOtpTimer();
+            } catch (error) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Sesi Berakhir',
-                    text: 'Silakan isi kembali form pendaftaran.'
+                    title: 'Gagal Mengirim',
+                    text: error.response?.data?.message || 'Kesalahan sistem.'
                 });
-                switchForm('form-register');
-                return;
+            }
+        }
+
+        // === FUNGSI: SUBMIT LUPA SANDI (Verifikasi Data User Asli) ===
+        async function handleForgotSubmit(e) {
+            e.preventDefault();
+            const nameValue = document.getElementById('forgot_name').value;
+            const contactValue = activeForgotMethod === 'email' ? document.getElementById('forgot_email').value :
+                document.getElementById('forgot_wa').value;
+
+            if (!nameValue || !contactValue) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Mohon lengkapi Username dan Kontak Anda.'
+                });
             }
 
-            // 2. Ambil detail kontak berdasarkan metode aktif
-            const contact = activeRegMethod === 'email' ? tempRegisterData.email : tempRegisterData.whatsapp;
-            const type = activeRegMethod === 'email' ? 'email' : 'wa';
+            tempForgotData = {
+                name: nameValue,
+                contact: contactValue,
+                type: activeForgotMethod === 'email' ? 'email' : 'wa'
+            };
 
-            // 3. Tampilkan Loading
             Swal.showLoading();
 
             try {
-                const response = await fetch("{{ route('send-otp') }}", {
-                    method: 'POST',
+                // Hubungi backend untuk mencocokkan nama dengan email/WA
+                const response = await axios.post("{{ route('forgot-password-req') }}", tempForgotData, {
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        contact,
-                        type
-                    })
+                    }
                 });
 
-                const result = await response.json();
-
-                if (response.ok) {
-                    // 4. Jika sukses, beri tahu user dan mulai ulang timer UI
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'OTP Terkirim',
-                        text: 'Kode verifikasi baru telah dikirim!',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    startOtpTimer(); // Menjalankan ulang timer 60 detik
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal Mengirim',
-                        text: result.message
-                    });
-                }
+                Swal.close();
+                document.getElementById('otp_desc_text').innerText =
+                    `Kami telah mengirimkan 6 digit kode OTP ke ${activeForgotMethod === 'email' ? 'email' : 'nomor WhatsApp'} Anda.`;
+                currentOtpContext = 'forgot';
+                switchForm('form-otp');
+                startOtpTimer();
             } catch (error) {
-                console.error("Resend OTP Error:", error);
+                console.error(error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Kesalahan Sistem',
-                    text: 'Gagal menghubungi server.'
+                    title: 'Gagal',
+                    text: error.response?.data?.message || 'Data tidak ditemukan.'
                 });
             }
         }
 
-        // === FUNGSI: SUBMIT LUPA SANDI ===
-        function handleForgotSubmit(e) {
+        // === FUNGSI: VERIFIKASI OTP ===
+        async function handleVerifyOTP(e) {
             e.preventDefault();
-            let contactValue = activeForgotMethod === 'email' ? document.getElementById('forgot_email').value : document
-                .getElementById('forgot_wa').value;
+            let otpValue = '';
+            document.querySelectorAll('.otp-box').forEach(box => otpValue += box.value);
 
-            if (!contactValue) {
+            if (otpValue.length !== 6) return Swal.fire({
+                icon: 'warning',
+                title: 'OTP tidak lengkap'
+            });
+
+            Swal.showLoading();
+
+            try {
+                if (currentOtpContext === 'register') {
+                    // Eksekusi Pembuatan Akun Baru
+                    const finalData = {
+                        ...tempRegisterData,
+                        otp: otpValue
+                    };
+                    const response = await axios.post("{{ route('register') }}", finalData, {
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+
+                    Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Akun berhasil dibuat. Silahkan login ulang.',
+                            timer: 3000
+                        })
+                        .then(() => window.location.href = "{{ route('login') }}");
+                } else if (currentOtpContext === 'forgot') {
+                    // Hanya verifikasi kecocokan OTP, jika valid -> Berikan Hak Masuk ke Form Reset Sandi
+                    const response = await axios.post("{{ route('verify-forgot-otp') }}", {
+                        contact: tempForgotData.contact,
+                        otp: otpValue
+                    }, {
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+
+                    Swal.close();
+
+                    // Simpan "Kunci Spesial" ke memori
+                    tempForgotData.reset_token = response.data.reset_token;
+
+                    // Buka Form Baru
+                    switchForm('form-reset-password');
+                }
+            } catch (error) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Oops...',
-                    text: `Mohon isi ${activeForgotMethod === 'email' ? 'Email' : 'No. WhatsApp'} Anda.`
+                    title: 'Verifikasi Gagal',
+                    text: error.response?.data?.message || 'Proses gagal.'
                 });
-                return;
+            }
+        }
+
+        // === FUNGSI: SIMPAN SANDI BARU ===
+        async function handleResetPasswordSubmit(e) {
+            e.preventDefault();
+            const password = document.getElementById('reset_new_password').value;
+            const password_confirmation = document.getElementById('reset_confirm_password').value;
+
+            if (password !== password_confirmation) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Konfirmasi sandi tidak cocok.'
+                });
             }
 
-            document.getElementById('otp_desc_text').innerText =
-                `Kami telah mengirimkan 6 digit kode OTP ke ${activeForgotMethod === 'email' ? 'email' : 'nomor WhatsApp'} Anda.`;
-            currentOtpContext = 'forgot';
-            switchForm('form-otp');
-            startOtpTimer();
+            Swal.showLoading();
+            try {
+                // Tembak perubahan Sandi
+                const response = await axios.post("{{ route('reset-password') }}", {
+                    name: tempForgotData.name,
+                    contact: tempForgotData.contact,
+                    reset_token: tempForgotData.reset_token,
+                    password: password,
+                    password_confirmation: password_confirmation
+                }, {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                Swal.fire({
+                        icon: 'success',
+                        title: 'Sandi Diperbarui!',
+                        text: 'Kata sandi berhasil diubah. Silakan login.',
+                        showConfirmButton: true,
+                        confirmButtonColor: '#0d9488'
+                    })
+                    .then(() => {
+                        document.getElementById('reset_new_password').value = '';
+                        document.getElementById('reset_confirm_password').value = '';
+                        tempForgotData = {}; // Bersihkan memori
+                        switchForm('form-login');
+                    });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: error.response?.data?.message || 'Gagal mengubah sandi.'
+                });
+            }
         }
 
         // === FUNGSI: TIMER OTP ===
@@ -821,91 +998,6 @@
                     resendBtn.classList.add('text-[#0d9488]', 'hover:text-[#0f766e]');
                 }
             }, 1000);
-        }
-
-        // === FUNGSI: VERIFIKASI OTP ===
-        async function handleVerifyOTP(e) {
-            e.preventDefault();
-            let otpValue = '';
-            document.querySelectorAll('.otp-box').forEach(box => otpValue += box.value);
-
-            if (otpValue.length !== 6) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'OTP tidak lengkap'
-                });
-                return;
-            }
-
-            Swal.showLoading();
-
-            try {
-                // Gabungkan data registrasi dengan kode OTP
-                const finalData = {
-                    ...tempRegisterData,
-                    otp: otpValue
-                };
-
-                const response = await fetch("{{ route('register') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(finalData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Akun berhasil dibuat. Tunggu verifikasi admin.',
-                        timer: 3000
-                    }).then(() => window.location.href = "{{ route('login') }}");
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Verifikasi Gagal',
-                        text: result.message
-                    });
-                }
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Gagal memproses pendaftaran.'
-                });
-            }
-        }
-
-        // === FUNGSI: SIMPAN SANDI BARU ===
-        function handleResetPasswordSubmit(e) {
-            e.preventDefault();
-            const newPassword = document.getElementById('reset_new_password').value;
-            const confirmPassword = document.getElementById('reset_confirm_password').value;
-
-            if (newPassword !== confirmPassword) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: 'Konfirmasi sandi tidak cocok dengan sandi baru.'
-                });
-                return;
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Sandi Diperbarui!',
-                text: 'Kata sandi Anda berhasil diubah. Silakan masuk kembali menggunakan sandi baru.',
-                showConfirmButton: true,
-                confirmButtonColor: '#0d9488'
-            }).then(() => {
-                document.getElementById('reset_new_password').value = '';
-                document.getElementById('reset_confirm_password').value = '';
-                switchForm('form-login');
-            });
         }
     </script>
 </body>

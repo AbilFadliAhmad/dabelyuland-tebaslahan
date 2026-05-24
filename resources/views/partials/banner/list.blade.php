@@ -71,7 +71,7 @@
             </div>
 
             {{-- Tombol Aksi Upload Banner --}}
-            <a href="{{ route('banner.create') }}"
+            <a href="{{ route('account.banner.create') }}"
                 class="inline-flex items-center px-5 py-2.5 bg-[#0d9488] hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-teal-600/20 hover:-translate-y-0.5 no-underline">
                 <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -130,11 +130,7 @@
                                             @else
                                                 <div
                                                     class="w-48 h-20 md:w-64 md:h-28 bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400 border border-gray-200 border-dashed">
-                                                    <svg class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24"
-                                                        stroke-width="1.5" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                                                    </svg>
+                                                    <i class="fas fa-image text-2xl mb-1 opacity-50"></i>
                                                     <span class="text-[10px] font-medium uppercase tracking-wider">Gambar
                                                         Hilang</span>
                                                 </div>
@@ -143,48 +139,70 @@
 
                                         {{-- Kolom Status Aktif/Tidak Aktif --}}
                                         <td class="py-4 px-4 text-center">
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" class="sr-only peer toggle-status"
-                                                    data-id="{{ $image->id }}" {{ $image->is_active ? 'checked' : '' }}>
-                                                <div
-                                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0d9488]">
-                                                </div>
+                                            @if ($image->status === 'menunggu')
                                                 <span
-                                                    class="ml-3 text-sm font-bold min-w-[50px] {{ $image->is_active ? 'text-[#0d9488]' : 'text-gray-500' }} status-text-{{ $image->id }}">
-                                                    {{ $image->is_active ? 'Aktif' : 'Mati' }}
+                                                    class="inline-block px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-md border border-amber-100">
+                                                    Menunggu
                                                 </span>
-                                            </label>
+                                            @else
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="sr-only peer toggle-status"
+                                                        data-id="{{ $image->id }}"
+                                                        {{ $image->status == 'aktif' ? 'checked' : '' }}>
+                                                    <div
+                                                        class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0d9488]">
+                                                    </div>
+                                                    <span
+                                                        class="ml-3 text-sm font-bold min-w-[50px] {{ $image->status == 'aktif' ? 'text-[#0d9488]' : 'text-gray-500' }} status-text-{{ $image->id }}">
+                                                        {{ $image->status == 'aktif' ? 'Aktif' : 'Mati' }}
+                                                    </span>
+                                                </label>
+                                            @endif
                                         </td>
 
-                                        {{-- Kolom Tombol Aksi (Edit & Hapus) --}}
+                                        {{-- Kolom Tombol Aksi --}}
                                         <td class="py-4 px-4 text-center">
-                                            <div class="flex items-center justify-center gap-2">
+                                            <div class="flex items-center justify-center gap-6">
 
-                                                <a href="{{ route('banner.edit', $image->id) }}"
-                                                    class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors shadow-sm"
-                                                    title="Edit Banner">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                                                        stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                                    </svg>
-                                                </a>
+                                                {{-- LOGIKA STATUS MENUNGGU --}}
+                                                @if ($image->status === 'menunggu')
+                                                    @if (auth()->user()->role === 'admin')
+                                                        {{-- Tombol Verifikasi (Hanya Admin) --}}
+                                                        <button onclick="verifyBanner({{ $image->id }})" type="button"
+                                                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white text-xs font-bold rounded-xl transition-all shadow-sm border border-blue-100 hover:border-transparent cursor-pointer">
+                                                            <i class="fas fa-clipboard-check text-sm"></i> Verifikasi
+                                                        </button>
+                                                    @else
+                                                        {{-- Pesan Menunggu (Hanya User) --}}
+                                                        <div
+                                                            class="flex flex-col items-center justify-center text-amber-500">
+                                                            <i class="fas fa-spinner fa-spin text-lg mb-1"></i>
+                                                            <span
+                                                                class="text-[10px] font-bold uppercase tracking-wider text-center leading-tight">Menunggu<br>Review
+                                                                Admin</span>
+                                                        </div>
+                                                    @endif
 
-                                                <form action="{{ route('banner.destroy', $image->id) }}" method="POST"
-                                                    class="m-0 p-0"
-                                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus banner ini? Tindakan ini tidak dapat dibatalkan.')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                        class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors shadow-sm border-0 cursor-pointer"
-                                                        title="Hapus Banner">
-                                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                                                            stroke-width="2" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                        </svg>
-                                                    </button>
-                                                </form>
+                                                    {{-- LOGIKA STATUS SELAIN MENUNGGU (AKTIF/NONAKTIF) --}}
+                                                @else
+                                                    <a href="{{ route('account.banner.edit', $image->id) }}"
+                                                        class="inline-flex items-center justify-center w-8 aspect-square rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors shadow-sm"
+                                                        title="Edit Banner">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+
+                                                    <form action="{{ route('account.banner.destroy', $image->id) }}"
+                                                        method="POST" class="m-0 p-0"
+                                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus banner ini? Tindakan ini tidak dapat dibatalkan.')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center justify-center w-8 aspect-square rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors shadow-sm border-0 cursor-pointer"
+                                                            title="Hapus Banner">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
 
                                             </div>
                                         </td>
@@ -196,11 +214,7 @@
                                 <tr>
                                     <td colspan="4" class="py-16 text-center">
                                         <div class="flex flex-col items-center justify-center">
-                                            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24"
-                                                stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                                            </svg>
+                                            <i class="fas fa-image text-gray-300 text-5xl mb-4 opacity-50"></i>
                                             <h6 class="text-lg font-bold text-gray-500 m-0 mb-1">Belum ada banner</h6>
                                             <p class="text-sm text-gray-400 m-0">Silakan klik tombol "Tambah Banner" untuk
                                                 memulai.</p>
@@ -213,7 +227,6 @@
                 </div>
             </div>
         </div>
-
         {{-- Footer --}}
         <footer class="mt-8 pb-6 text-center md:text-left">
             <p class="text-sm text-gray-400 m-0">2026 &copy; Dabelyuland Indonesia</p>
@@ -223,27 +236,8 @@
 @endsection
 
 @section('script')
-    <script src="{{ asset('assets/js/main.js') }}"></script>
-    <script src="{{ asset('assets/js/sweetalert-delete.js') }}"></script>
-
     {{-- Inisialisasi Simple-Datatables jika file plugin tersedia --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let table1 = document.querySelector('#table1');
-            if (table1 && typeof simpleDatatables !== 'undefined') {
-                new simpleDatatables.DataTable(table1, {
-                    searchable: true,
-                    fixedHeight: false,
-                    perPage: 10,
-                    labels: {
-                        placeholder: "Cari banner...",
-                        perPage: "{select} data per halaman",
-                        noRows: "Banner tidak ditemukan",
-                        info: "Menampilkan {start} - {end} dari {rows} banner"
-                    }
-                });
-            }
-        });
         document.querySelectorAll('.toggle-status').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 let bannerId = this.getAttribute('data-id');
@@ -252,7 +246,7 @@
 
                 // Ubah teks sementara saat proses
                 statusText.innerText = "...";
-                let url = "{{ route('admin.banner.toggle-status', ':id') }}";
+                let url = "{{ route('account.banner.toggle-status', ':id') }}";
                 url = url.replace(':id', bannerId);
                 fetch(url, {
                         method: 'PATCH',
@@ -285,5 +279,66 @@
                     });
             });
         });
+
+        function verifyBanner(bannerId) {
+            Swal.fire({
+                title: '<span class="font-bold text-gray-800">Verifikasi Banner</span>',
+                html: '<p class="text-sm text-gray-500">Tentukan apakah Anda ingin menyetujui atau menolak penayangan banner ini.</p>',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check mr-1"></i> Terima',
+                denyButtonText: '<i class="fas fa-times mr-1"></i> Tolak',
+                cancelButtonText: 'Batal',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'px-4 py-2 bg-[#0d9488] hover:bg-teal-700 text-white font-bold rounded-lg mx-1 transition-colors',
+                    denyButton: 'px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg mx-1 transition-colors',
+                    cancelButton: 'px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg mx-1 transition-colors',
+                    popup: 'rounded-2xl shadow-xl border border-gray-100'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit Form untuk Menerima (Aktif)
+                    submitVerification(bannerId, 'aktif');
+                } else if (result.isDenied) {
+                    // Submit Form untuk Menolak (Nonaktif / Ditolak)
+                    submitVerification(bannerId, 'nonaktif');
+                }
+            });
+        }
+
+        function submitVerification(bannerId, actionStatus) {
+            // Membuat form virtual untuk disubmit secara POST
+            const form = document.createElement('form');
+            form.method = 'POST';
+
+            // Sesuaikan route URL ini dengan route controller verifikasi kamu
+            form.action = `{{ route('admin.banner.verify-banner') }}`;
+
+            // Tambahkan CSRF Token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+
+            // Tambahkan Status Keputusan (Aktif / Nonaktif)
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = actionStatus;
+            form.appendChild(statusInput);
+
+            // Tambahkan ID Banner
+            const bannerIdInput = document.createElement('input');
+            bannerIdInput.type = 'hidden';
+            bannerIdInput.name = 'banner_id';
+            bannerIdInput.value = bannerId;
+            form.appendChild(bannerIdInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 @endsection

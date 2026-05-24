@@ -27,7 +27,7 @@
                                     alt="Foto Tanah"
                                     class="w-[110px] h-[75px] object-cover rounded-lg shrink-0 border border-gray-200"
                                     loading="lazy"
-                                    onerror="this.outerHTML='<div class=\'w-[110px] h-[75px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 border border-gray-200\'><i class=\'bi bi-image text-red-500 text-2xl\'></i></div>'">
+                                    onerror="this.outerHTML='<div class=\'w-[110px] h-[75px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 border border-gray-200\'><i class=\'bi bi-image text-purple-500 text-2xl\'></i></div>'">
                             @else
                                 <div
                                     class="w-[110px] h-[75px] rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 border border-gray-200">
@@ -42,7 +42,7 @@
                                 </h6>
 
                                 <div class="text-gray-500 line-clamp-2 mb-1 text-[13.6px] leading-snug">
-                                    <i class="bi bi-geo-alt mr-1 text-red-500"></i> {{ $property->kota ?? '-' }}
+                                    <i class="bi bi-geo-alt mr-1 text-purple-500"></i> {{ $property->kota ?? '-' }}
                                 </div>
 
                                 <div class="text-gray-500 flex items-center text-xs">
@@ -88,7 +88,7 @@
                             @endif
 
                             {{-- 2. LOGIKA PERCABANGAN: MODERASI VS PENGATURAN --}}
-                            @if ($property->status == 'menunggu')
+                            @if ($property->status == 'menunggu' && auth()->user()->role == 'admin')
                                 {{-- TAMPILAN KHUSUS ADMIN: PERLU VERIFIKASI --}}
 
                                 {{-- Tombol Kunjungi (Untuk Cek Kelayakan) --}}
@@ -109,6 +109,11 @@
                                         <i class="bi bi-patch-check-fill mr-1"></i> Verifikasi Sekarang
                                     </button>
                                 </form>
+                            @elseif ($property->status == 'menunggu')
+                                <button type="button" onclick="confirmVerify('{{ $property->id }}')"
+                                    class="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-900 text-white hover:bg-indigo-700 transition-all shadow-sm active:scale-95">
+                                    <i class="fa-solid fa-clock mr-1"></i> Menunggu
+                                </button>
                             @else
                                 {{-- TAMPILAN PENGATURAN (Jika Sudah Terverifikasi/Aktif/Non-Aktif) --}}
 
@@ -172,9 +177,9 @@
                                 <input type="hidden" name="other_reason" id="other-reason-{{ $property->id }}">
 
                                 <button type="button" onclick="showDeletePopup('{{ $property->id }}')"
-                                    class="inline-flex items-center justify-center w-8 h-8 rounded border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white transition-colors"
                                     title="Hapus / Arsipkan Lahan">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="bi bi-archive"></i>
                                 </button>
                             </form>
                         </div>
@@ -240,7 +245,7 @@
                                     </h6>
 
                                     <div class="text-gray-500 line-clamp-2 mb-1 text-[13.6px] leading-snug">
-                                        <i class="bi bi-geo-alt mr-1 text-red-500"></i>
+                                        <i class="bi bi-geo-alt mr-1 text-purple-500"></i>
                                         {{ $property->kota ?? '-' }}
                                     </div>
 
@@ -281,7 +286,7 @@
                                 @endif
 
                                 {{-- 2. LOGIKA PERCABANGAN: MODERASI VS PENGATURAN --}}
-                                @if ($property->status == 'menunggu')
+                                @if ($property->status == 'menunggu' && auth()->user()->role == 'admin')
                                     {{-- TAMPILAN KHUSUS ADMIN: PERLU VERIFIKASI --}}
 
                                     {{-- Tombol Kunjungi (Untuk Cek Kelayakan) --}}
@@ -302,6 +307,11 @@
                                             <i class="bi bi-patch-check-fill mr-1"></i> Verifikasi Sekarang
                                         </button>
                                     </form>
+                                @elseif ($property->status == 'menunggu')
+                                    <button type="button" onclick="confirmVerify('{{ $property->id }}')"
+                                        class="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-bold bg-indigo-900 text-white hover:bg-indigo-700 transition-all shadow-sm active:scale-95">
+                                        <i class="fa-solid fa-clock mr-1"></i> Menunggu
+                                    </button>
                                 @else
                                     {{-- TAMPILAN PENGATURAN (Jika Sudah Terverifikasi/Aktif/Non-Aktif) --}}
 
@@ -365,9 +375,9 @@
                                     <input type="hidden" name="other_reason" id="other-reason-{{ $property->id }}">
 
                                     <button type="button" onclick="showDeletePopup('{{ $property->id }}')"
-                                        class="inline-flex items-center justify-center w-8 h-8 rounded border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white transition-colors"
                                         title="Hapus / Arsipkan Lahan">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-archive"></i>
                                     </button>
                                 </form>
                             </div>
