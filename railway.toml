@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+
+[providers.php]
+version = "8.5"
+
+[providers.node]
+version = "24"
