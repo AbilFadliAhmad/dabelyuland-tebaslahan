@@ -8,8 +8,6 @@ use App\Models\Property;
 use App\Models\Testimoni;
 use App\Models\PropertyRecommendation;
 use App\Models\PropertyHighlight;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Artisan;
 // use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
@@ -17,28 +15,19 @@ class HomeController extends Controller
     public function index(Request $request)
     {
 
-        if (!Schema::hasTable('users')) {
-            try {
-                // Paksa jalankan migrasi saat halaman web diakses pertama kali
-                Artisan::call('migrate', ['--force' => true]);
-            } catch (\Exception $e) {
-                // Jika gagal (misal kredensial database di Render salah), munculkan erornya
-                return "Gagal migrasi otomatis di server: " . $e->getMessage();
-            }
-        }
         // 1. Definisikan Query Dasar Rekomendasi (Gunakan property_id untuk kestabilan cursor)
         $queryRekomendasi = PropertyRecommendation::with(['property', 'property.mainImage'])
-            ->whereHas('property', function($q) {
+            ->whereHas('property', function ($q) {
                 $q->where('status', 'aktif');
             })
-            ->latest('property_id'); 
+            ->latest('property_id');
         // dd($queryRekomendasi);
 
         // 2. Isolasi Request AJAX: Hanya proses rekomendasi
         if ($request->ajax()) {
             /** @var \Illuminate\Pagination\CursorPaginator $rekomendasi */
             $rekomendasi = $queryRekomendasi->cursorPaginate(10);
-            
+
             $html = '';
             foreach ($rekomendasi as $item) {
                 $html .= view('partials.property.cardProperty', ['item' => $item])->render();
@@ -74,20 +63,20 @@ class HomeController extends Controller
         $lat = $request->lat;
         $lng = $request->lng;
 
-        $radii = [100000, 200000, 400000, 800000, 1000000]; 
+        $radii = [100000, 200000, 400000, 800000, 1000000];
         $properties = collect();
 
         foreach ($radii as $radius) {
             // Perbaikan: Filter status lewat relasi 'property'
             $properties = PropertyHighlight::with(['property', 'property.mainImage'])
                 ->terdekat($lat, $lng, $radius)
-                ->whereHas('property', function($q) {
+                ->whereHas('property', function ($q) {
                     $q->where('status', 'aktif');
                 })
                 ->where('expired_at', '>', now()) // Pastikan belum expired
                 ->limit(3)
                 ->get();
-            
+
             if ($properties->count() >= 3) {
                 break;
             }
@@ -95,14 +84,14 @@ class HomeController extends Controller
 
         return $properties;
     }
-    
+
     // untuk detail
     public function show(Property $property)
     {
         // Load relasi
-        $property = $property->load(['user', 'galleries']); 
+        $property = $property->load(['user', 'galleries']);
 
-        
+
         // Kirim data ke view
         return view('frontside.property-details', compact('property'));
     }
