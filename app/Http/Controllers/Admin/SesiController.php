@@ -36,7 +36,7 @@ class SesiController extends Controller
             'name' => 'required|unique:users,name',
             'email' => 'required_without:whatsapp|nullable|email|unique:users,email',
             'whatsapp' => 'required_without:email|nullable|unique:users,nowa',
-            'password' => 'required|min:8|confirmed', 
+            'password' => 'required|min:8|confirmed',
             'otp' => 'required|numeric',
         ]);
 
@@ -101,16 +101,16 @@ class SesiController extends Controller
             // =========================================================================
             // Ambil payload response mentah yang akan dikirim ke browser client
             $response = response()->json(['message' => 'Registrasi berhasil']);
-            
+
             // Kirim raw header & content ke browser instan tanpa mematikan script
             echo $response->getContent();
-            
+
             header("Connection: close");
             header("Content-Length: " . strlen($response->getContent()));
             header("Content-Type: application/json");
-            
+
             if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request(); 
+                fastcgi_finish_request();
             }
 
             // =========================================================================
@@ -124,7 +124,6 @@ class SesiController extends Controller
             }
 
             exit;
-
         } catch (\Exception $e) {
             // Jika terjadi error (misal: koneksi putus, tabel hilang), batalkan SEMUA perubahan
             DB::rollBack();
@@ -139,7 +138,7 @@ class SesiController extends Controller
     // Proses login
     public function login(Request $request)
     {
-        // Validasi input, nanti validasi ini akan dipindahkan ke request
+        // 1. Validasi Input Dasar
         $request->validate([
             'name' => 'required|string',
             'password' => 'required|string',
@@ -148,17 +147,14 @@ class SesiController extends Controller
             'password.required' => 'Password wajib diisi',
         ]);
 
-        // Siapkan credentials dengan mengambil key name dan password dari request pada form input
         $credentials = $request->only('name', 'password');
 
-        // Verifikasi password dulu
+        // 2. Verifikasi Kredensial Keamanan Akun
         if (Auth::attempt($credentials, true)) {
-            // AMbil detail user dari session_id
             $user = Auth::user();
 
-            // Check apakah user sudah diverifikasi atau belum
+            // Cek apakah akun sudah diverifikasi oleh admin
             if ($user->is_verified === false) {
-                // Logout dan buat ulang session_id
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -166,60 +162,53 @@ class SesiController extends Controller
                 return back()->withErrors(['login' => 'Anda harus diverifikasi oleh admin terlebih dahulu.'])->withInput();
             }
 
-            // Buat ulang session_idnya agar lebih aman
+            // Buat ulang session_id agar lebih aman dari Session Fixation
             $request->session()->regenerate();
 
-            // Ambil token sebelum koneksi ditutup untuk kebutuhan FCM
+            // 3. Proses Pembungkusan Operasi Database & Audit Log
+            DB::transaction(function () use ($user) {
+                // Audit Log: Sesi Masuk Aplikasi (Enum 'sesi', 'create')
+                DB::table('audit_logs')->insert([
+                    'user_id'     => $user->id,
+                    'type'        => 'sesi',
+                    'action'      => 'create',
+                    'description' => "Pengguna {$user->name} dengan hak akses [{$user->role}] berhasil masuk ke dalam sistem.",
+                    'created_at'  => now(),
+                    'updated_at'  => now()
+                ]);
+            });
+
+            // 4. Sinkronisasi Token FCM (Dilakukan secara prosedural sebelum redirect)
             $fcmToken = $request->input('fcm_token');
-
-            // Audit Log: Aksi Masuk Sesi Aplikasi
-            DB::table('audit_logs')->insert([
-                'user_id'     => $user->id,
-                'type'        => 'sesi',
-                'action'      => 'create',
-                'description' => "Pengguna {$user->name} dengan hak akses [{$user->role}] berhasil masuk ke dalam sistem.",
-                'created_at'  => now(),
-                'updated_at'  => now()
-            ]);
-
-            // Set flash message sebelum putus koneksi
-            session()->flash('success', "Selamat Datang Kembali, {$user->name}!");
-            
-            // PENTING: Paksa simpan data session ke server agar tidak hangus saat koneksi diputus
-            $request->session()->save();
-
-            // Tentukan arah redirect berdasarkan role
-            $redirectUrl = ($user->role === 'admin') ? url('/admin') : route('user.index');
-
-            // =========================================================================
-            // ASYNC TRICK UNTUK WEB REDIRECT
-            // =========================================================================
-            header("Location: " . $redirectUrl);
-            header("Connection: close");
-            header("Content-Length: 0");
-            
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request(); 
-            }
-
-            // =========================================================================
-            // ASYNC BACKGROUND PROCESS (USER SUDAH DIPINDAHKAN KE DASHBOARD)
-            // =========================================================================
-            try {
-                set_time_limit(60);
-
-                // 1. Jalankan proses subscribe topik token
-                if ($fcmToken && !empty($fcmToken)) {
+            if ($fcmToken && !empty($fcmToken)) {
+                try {
                     $topicToSubscribe = ($user->role === 'admin') ? 'admin' : 'user_' . $user->id;
                     FCMController::subscribeTopic($fcmToken, $topicToSubscribe);
+                } catch (\Exception $e) {
+                    // Catat eror jika Firebase macet, namun jangan gagalkan proses masuk user
+                    Log::error('FCM Login Sync Error: ' . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                Log::error('FCM Login Background Error: ' . $e->getMessage());
             }
-            exit;
+
+            // Set flash message untuk memicu SweetAlert2 di halaman dashboard tujuan
+            session()->flash('success', "Selamat Datang Kembali, {$user->name}!");
+
+            // 5. Pengalihan Halaman (Redirect) Berdasarkan Role Menggunakan Fitur Bawaan Laravel
+            if ($user->role === 'admin') {
+                return redirect()->intended('/admin'); // Membuka dashboard admin
+            } elseif ($user->role === 'user') {
+                return redirect()->route('user.index'); // Membuka index properti agen
+            } else {
+                // Antisipasi jika ada akun dengan role tidak dikenal
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors(['name' => 'Role akun tidak valid.'])->withInput();
+            }
         }
 
-        // Jika Password atau Nama salah (Gunakan pesan generic agar aman dari Hacker)
+        // Jika Kredensial Salah
         return back()->withErrors([
             'name' => 'Akun atau Password yang Anda masukkan salah.',
         ])->withInput($request->only('name'));
@@ -258,9 +247,9 @@ class SesiController extends Controller
         header("Location: " . url('login'));
         header("Connection: close");
         header("Content-Length: 0");
-        
+
         if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request(); 
+            fastcgi_finish_request();
         }
 
         // =========================================================================
@@ -293,7 +282,7 @@ class SesiController extends Controller
 
         // Cek Rate Limit (Anti-Spam OTP)
         if (Cache::has('otp_rate_limit_' . $contact)) {
-             return response()->json(['message' => 'Tunggu beberapa saat sebelum meminta OTP baru.'], 429);
+            return response()->json(['message' => 'Tunggu beberapa saat sebelum meminta OTP baru.'], 429);
         }
 
         // Generate 6 digit angka acak
@@ -306,12 +295,12 @@ class SesiController extends Controller
 
         // 1. Tentukan URL API Laravel kamu yang akan mengeksekusi OTP
         $webhookUrl = config('app.url') . '/api/internal/process-otp';
-        
+
         // 2. Publish antrean ke Upstash QStash
         // 2. Ambil Kredensial dari .env
         $qStashToken = config('services.qstash.token');
         $qStashBaseUrl = config('services.qstash.url');
-        
+
         // 3. Publish antrean ke Upstash QStash
         Http::withToken($qStashToken)
             ->post("{$qStashBaseUrl}/v2/publish/{$webhookUrl}", [
@@ -335,13 +324,13 @@ class SesiController extends Controller
 
         // Cek apakah ada User dengan Username dan Kontak (WA/Email) yang benar-benar cocok
         $user = User::where('name', $request->name)
-                    ->where(function($query) use ($request) {
-                        if ($request->type == 'wa') {
-                            $query->where('nowa', $request->contact);
-                        } else {
-                            $query->where('email', $request->contact);
-                        }
-                    })->first();
+            ->where(function ($query) use ($request) {
+                if ($request->type == 'wa') {
+                    $query->where('nowa', $request->contact);
+                } else {
+                    $query->where('email', $request->contact);
+                }
+            })->first();
 
         if (!$user) {
             return response()->json(['message' => 'Data pengguna tidak ditemukan atau tidak cocok dengan sistem kami.'], 404);
@@ -351,7 +340,7 @@ class SesiController extends Controller
 
         // Cek Batas Spam
         if (Cache::has('otp_rate_limit_' . $contact)) {
-             return response()->json(['message' => 'Tunggu beberapa saat sebelum meminta OTP baru.'], 429);
+            return response()->json(['message' => 'Tunggu beberapa saat sebelum meminta OTP baru.'], 429);
         }
 
         // Tembak OTP ke Message Broker (Upstash)
@@ -362,7 +351,7 @@ class SesiController extends Controller
         $webhookUrl = config('app.url') . '/api/internal/process-otp';
         $qStashToken = env('QSTASH_TOKEN');
         $qStashBaseUrl = env('QSTASH_URL', 'https://qstash.upstash.io');
-        
+
         Http::withoutVerifying()
             ->withToken($qStashToken)
             ->post("{$qStashBaseUrl}/v2/publish/{$webhookUrl}", [
@@ -392,7 +381,7 @@ class SesiController extends Controller
 
         // OTP Benar! Buat "Kunci Spesial" (Token) agar user bisa mengakses form reset sandi
         $resetToken = Str::random(60);
-        Cache::put('reset_token_' . $request->contact, $resetToken, 300); 
+        Cache::put('reset_token_' . $request->contact, $resetToken, 300);
 
         // Hapus OTP lama karena sudah terpakai
         Cache::forget('otp_' . $request->contact);
@@ -423,9 +412,9 @@ class SesiController extends Controller
         }
 
         $user = User::where('name', $request->name)
-                    ->where(function($q) use ($request) {
-                        $q->where('nowa', $request->contact)->orWhere('email', $request->contact);
-                    })->first();
+            ->where(function ($q) use ($request) {
+                $q->where('nowa', $request->contact)->orWhere('email', $request->contact);
+            })->first();
 
         if (!$user) {
             return response()->json(['message' => 'Pengguna tidak ditemukan.'], 404);
@@ -475,16 +464,15 @@ class SesiController extends Controller
                 // Kita harus "memaksa" error (throw exception) agar memicu HTTP 500
                 throw new \Exception($response['message'] ?? 'Layanan API Pihak Ketiga Gagal');
             }
-            
+
             // Kembalikan 200 OK ke Upstash agar antrean ditandai sebagai Selesai (Delivered)
             return response()->json(['status' => 'success']);
-
         } catch (\Exception $e) {
             Log::error("QStash Webhook Error: " . $e->getMessage());
-            
+
             // Kembalikan HTTP 500. Upstash QStash sangat cerdas: jika dia menerima status 500, 
             // dia akan otomatis melakukan RETRY (mencoba mengirim ulang) beberapa detik/menit kemudian.
             return response()->json(['error' => $e->getMessage()], 500);
-        }   
+        }
     }
 }
